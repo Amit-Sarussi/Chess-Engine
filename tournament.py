@@ -24,7 +24,7 @@ class Tournament:
             if (i + 1) % 100 == 0:
                 print(f"Finished game {i + 1} out of {self.num_games}")
             
-            print(result)
+            #print(result)
     
     def print_results(self):
         win_rate_1 = self.results["player_1"] / self.num_games * 100

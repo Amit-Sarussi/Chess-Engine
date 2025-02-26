@@ -2,6 +2,7 @@ from attacks import START_POSITION
 from board import Board
 from headers import *
 from heuristicsPlayer import HeuristicsPlayer
+from hybridPlayer import HybridPlayer
 from randomPlayer import RandomPlayer
 
 
@@ -16,6 +17,8 @@ class Game:
                 self.player_1 = RandomPlayer(self.board, color.white)
             case player_type.heuristics:
                 self.player_1 = HeuristicsPlayer(self.board, color.white)
+            case player_type.hybrid:
+                self.player_1 = HybridPlayer(self.board, color.white)
             case player_type.human:
                 print("NOT IMPLMENTED YET")
             case _:
@@ -26,6 +29,8 @@ class Game:
                 self.player_2 = RandomPlayer(self.board, color.black)
             case player_type.heuristics:
                 self.player_2 = HeuristicsPlayer(self.board, color.black)
+            case player_type.hybrid:
+                self.player_1 = HybridPlayer(self.board, color.black)
             case player_type.human:
                 print("NOT IMPLMENTED YET")
             case _:

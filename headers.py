@@ -72,9 +72,10 @@ class castle(IntEnum):
 class player_type(IntEnum):
     random = 0
     heuristics = 1
-    terminal = 2
-    graphics = 3
-    network = 4
+    hybrid = 2
+    terminal = 3
+    graphics = 4
+    network = 5
 
 class game_results(IntEnum):
     white = 0
