@@ -1,4 +1,5 @@
 from game import Game
+from gameSaver import save_game_data
 from headers import *
 
 class Tournament:
@@ -21,10 +22,11 @@ class Tournament:
                     self.results["draw"] += 1
             self.game.reset()
             
-            if (i + 1) % 100 == 0:
-                print(f"Finished game {i + 1} out of {self.num_games}")
-            
-            #print(result)
+            if (i + 1) % 1000 == 0:
+                print(f"Finished {i + 1} games out of {self.num_games}")
+                save_game_data(self.games_data)
+                print(f"Saved the last 1000 games")
+
     
     def print_results(self):
         win_rate_1 = self.results["player_1"] / self.num_games * 100

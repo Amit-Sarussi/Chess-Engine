@@ -81,7 +81,9 @@ class game_results(IntEnum):
     white = 0
     black = 1
     stalemate = 2
-    
+
+games_dir = "games"
+scoreboard_dir = "scoreboards"
 
 
 # Selection bitboards

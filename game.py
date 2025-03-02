@@ -10,7 +10,7 @@ class Game:
     def __init__(self, player_1_type: int, player_2_type: int) -> None:
         self.board: Board = Board(starting_fen=START_POSITION)
         self.board_copy = self.board.copy_board()
-        self.game_data = {"start_fen": START_POSITION, "moves": [], "results": None}
+        self.game_data = {"start_fen": START_POSITION, "positions": [START_POSITION]}
         
         match player_1_type:
             case player_type.random:
@@ -40,7 +40,7 @@ class Game:
         
     def reset(self):
         self.board.restore_board(*self.board_copy)
-        self.game_data = {"start_fen": START_POSITION, "moves": [], "results": None}
+        self.game_data = {"start_fen": START_POSITION, "positions": [START_POSITION]}
         self.results = None
         
     
@@ -62,7 +62,7 @@ class Game:
                     self.results = game_results.stalemate
                 break
             
-            self.game_data["moves"].append(move)
+            self.game_data["positions"].append(self.board.to_scoreboard_fen())
         
         if self.board.halfmove > 50:
             self.results = game_results.stalemate

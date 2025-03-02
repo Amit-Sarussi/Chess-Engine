@@ -116,7 +116,7 @@ class Board:
         self.halfmove = int(halfmove)
         self.fullmove = int(fullmove)
 
-    def to_fen(self) -> str:
+    def to_scoreboard_fen(self) -> str:
         fen = ""
         for rank in range(7, -1, -1):
             empty = 0
@@ -148,7 +148,6 @@ class Board:
         fen += castling + " "
         if self.en_passant == -1: fen += "-"
         else: fen += square_to_coordinates[self.en_passant]
-        fen += " " + str(self.halfmove) + " " + str(self.fullmove)
         return fen
         
     def is_square_attacked(self, square: int, side: int) -> bool:
