@@ -2,8 +2,15 @@ import json
 from headers import *
 import hashlib
 
-scoreboard_cache = {}
+scoreboard_cache = None
 
+def load_scoreboards():
+    global scoreboard_cache
+    scoreboard_cache = {}
+    for i in range(50):
+        with open(f"{scoreboard_dir}/scoreboard_{i}.json", "r") as f:
+            scoreboard_cache[f"scoreboard_{i}.json"] = json.load(f)
+            
 def evaluate_game(game, alpha=0.9):
     positions = game["positions"]
     relevant_positions = positions[1::2]
@@ -24,10 +31,6 @@ def update_score(position_data):
     fen, score = position_data
     filename = get_filename_from_fen(fen)
     
-    if filename not in scoreboard_cache:
-        with open(f"{scoreboard_dir}/{filename}", "r") as f:
-            scoreboard_cache[filename] = json.load(f)
-    
     scoreboard = scoreboard_cache[filename]
     
     if fen not in scoreboard:
@@ -42,6 +45,9 @@ def update_score(position_data):
             json.dump(scoreboard, f)
 
 def save_game_data(game_data):
+    if scoreboard_cache == None:
+        load_scoreboards()
+        
     for game in game_data:
         # Evaluate the game using the chosen evaluation function
         scores = evaluate_game(game)
@@ -57,4 +63,25 @@ def create_all_scoreboards(scoreboard_count=50):
     for i in range(scoreboard_count):
         with open(f"{scoreboard_dir}/scoreboard_{i}.json", "x") as f:
             json.dump({}, f)
+
+def combine_scoreboards(folder_from, folder_to):
+    for i in range(50):
+        with open(f"{folder_from}/scoreboard_{i}.json", "r") as f:
+            from_scoreboard = json.load(f)
+        
+        with open(f"{folder_to}/scoreboard_{i}.json", "w") as f:
+            to_scoreboard = json.load(f)
+            
+        for key in from_scoreboard.keys():
+            if key in to_scoreboard:
+                before_avg = to_scoreboard[key][0]
+                before_amount = to_scoreboard[key][1]
+                after_amount = before_amount + from_scoreboard[key][1]
+                to_scoreboard[key][0] = (before_avg * before_amount + from_scoreboard[key][0]) / after_amount
+                to_scoreboard[key][1] = after_amount
+            else:
+                to_scoreboard[key] = from_scoreboard[key]
+        
+        with open(f"{folder_to}/scoreboard_{i}.json", "w") as f:
+            json.dump(to_scoreboard, f)
 

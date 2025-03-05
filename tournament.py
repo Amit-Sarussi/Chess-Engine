@@ -25,7 +25,10 @@ class Tournament:
             if (i + 1) % 1000 == 0:
                 print(f"Finished {i + 1} games out of {self.num_games}")
                 save_game_data(self.games_data)
+                self.games_data = []
                 print(f"Saved the last 1000 games")
+            elif (i + 1) % 100 == 0:
+                print(f"Finished {i + 1} games out of {self.num_games}")
 
     
     def print_results(self):
