@@ -84,4 +84,5 @@ def combine_scoreboards(folder_from, folder_to):
         
         with open(f"{folder_to}/scoreboard_{i}.json", "w") as f:
             json.dump(to_scoreboard, f)
-
+    
+#create_all_scoreboards()
