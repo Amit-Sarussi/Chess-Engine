@@ -19,7 +19,7 @@ class Game:
                 self.player_1 = HeuristicsPlayer(self.board, color.white)
             case player_type.hybrid:
                 self.player_1 = HybridPlayer(self.board, color.white)
-            case player_type.human:
+            case player_type.graphics:
                 print("NOT IMPLMENTED YET")
             case _:
                 print("NOT IMPLMENTED YET")
@@ -31,8 +31,8 @@ class Game:
                 self.player_2 = HeuristicsPlayer(self.board, color.black)
             case player_type.hybrid:
                 self.player_1 = HybridPlayer(self.board, color.black)
-            case player_type.human:
-                print("NOT IMPLMENTED YET")
+            case player_type.graphics:
+                print("INVALID TYPE")
             case _:
                 print("NOT IMPLMENTED YET")
         

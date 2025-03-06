@@ -1,19 +1,25 @@
+from calendar import c
 import json
 from headers import *
 import hashlib
 
 scoreboard_cache = None
+counter = None
 
 def load_scoreboards():
     global scoreboard_cache
+    global counter
     scoreboard_cache = {}
+    counter = {}
     for i in range(50):
         with open(f"{scoreboard_dir}/scoreboard_{i}.json", "r") as f:
             scoreboard_cache[f"scoreboard_{i}.json"] = json.load(f)
+            counter[f"scoreboard_{i}.json"] = 0
             
 def evaluate_game(game, alpha=0.9):
     positions = game["positions"]
     relevant_positions = positions[1::2]
+    relevant_positions.reverse()
     evaluations = []
     if game["result"] == game_results.white:
         evaluations.append((relevant_positions[0], 1))
@@ -23,7 +29,7 @@ def evaluate_game(game, alpha=0.9):
         evaluations.append((relevant_positions[0], 0.3))
     
     for index, fen in enumerate(relevant_positions[1:]):
-        evaluations.append((fen, alpha * evaluations[index-1][1]))
+        evaluations.append((fen, alpha * evaluations[index][1]))
     
     return evaluations
 
@@ -38,11 +44,16 @@ def update_score(position_data):
     else:
         new_avg = (scoreboard[fen][0] * scoreboard[fen][1] + score) / (scoreboard[fen][1] + 1)
         scoreboard[fen] = (new_avg, scoreboard[fen][1] + 1)
+        
+    counter[filename] += 1
 
     # Only write back every 1000 updates
-    if len(scoreboard) % 10000 == 0:
+    if counter[filename] % 100_000 == 0:
         with open(f"{scoreboard_dir}/{filename}", "w") as f:
             json.dump(scoreboard, f)
+        
+        counter[filename] = 0
+    
 
 def save_game_data(game_data):
     if scoreboard_cache == None:

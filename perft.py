@@ -1,5 +1,4 @@
 from unittest import result
-from idna import encode
 from headers import *
 from bit import *
 from board import Board

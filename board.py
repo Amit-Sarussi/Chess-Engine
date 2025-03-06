@@ -115,6 +115,64 @@ class Board:
         # Update clocks
         self.halfmove = int(halfmove)
         self.fullmove = int(fullmove)
+    
+    
+    @staticmethod
+    def validate_fen(fen: str) -> bool:
+        """Validates a FEN string."""
+        parts = fen.split()
+        if len(parts) != 6:
+            return False
+
+        board_part, turn_part, castle_part, en_passant_part, halfmove_part, fullmove_part = parts
+
+        # Validate board part
+        ranks = board_part.split('/')
+        if len(ranks) != 8:
+            return False
+        for rank in ranks:
+            file_count = 0
+            for char in rank:
+                if char.isdigit():
+                    file_count += int(char)
+                elif char in 'PNBRQKpnbrqk':
+                    file_count += 1
+                else:
+                    return False
+            if file_count != 8:
+                return False
+
+        # Validate turn part
+        if turn_part not in ('w', 'b'):
+            return False
+
+        # Validate castle part
+        if castle_part != '-':
+            for char in castle_part:
+                if char not in 'KQkq':
+                    return False
+
+        # Validate en passant part
+        if en_passant_part != '-':
+            if len(en_passant_part) != 2:
+                return False
+            file, rank = en_passant_part
+            if file not in 'abcdefgh' or rank not in '123456':
+                return False
+
+        # Validate halfmove part
+        if not halfmove_part.isdigit():
+            return False
+        if int(halfmove_part) < 0:
+            return False
+
+        # Validate fullmove part
+        if not fullmove_part.isdigit():
+            return False
+        if int(fullmove_part) < 1:
+            return False
+
+        return True
 
     def to_scoreboard_fen(self) -> str:
         fen = ""
@@ -138,7 +196,7 @@ class Board:
                 fen += str(empty)
             fen += "/"
         fen = fen[:-1]
-        fen += " " + ("w" if self.turn == color.white else "b") + " "
+        fen +=  " "
         castling = ""
         if self.castle & castle.wk: castling += "K"
         if self.castle & castle.wq: castling += "Q"

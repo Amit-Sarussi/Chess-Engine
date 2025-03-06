@@ -73,7 +73,6 @@ class player_type(IntEnum):
     random = 0
     heuristics = 1
     hybrid = 2
-    terminal = 3
     graphics = 4
     network = 5
 
