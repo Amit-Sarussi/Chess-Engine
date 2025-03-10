@@ -62,7 +62,7 @@ class Game:
                     self.results = game_results.stalemate
                 break
             
-            self.game_data["positions"].append(self.board.to_scoreboard_fen())
+            self.game_data["positions"].append(self.board.to_scoreboard_array())
         
         if self.board.halfmove > 50:
             self.results = game_results.stalemate

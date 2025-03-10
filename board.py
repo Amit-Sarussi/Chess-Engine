@@ -174,40 +174,30 @@ class Board:
 
         return True
 
-    def to_scoreboard_fen(self) -> str:
-        fen = ""
-        for rank in range(7, -1, -1):
-            empty = 0
+    def to_scoreboard_array(self) -> str:
+        array = []
+        for rank in range(8):
             for file in range(8):
+                # Get the piece at the square
                 square = rank * 8 + file
-                piece = -1
-                for i in range(12):
-                    if get_bit(self.bitboards[i], square):
-                        piece = i
+                for piece in range(12):
+                    if get_bit(self.bitboards[piece], square):
+                        array.append(piece + 1) # 0 is Empty
                         break
-                if piece == -1:
-                    empty += 1
                 else:
-                    if empty > 0:
-                        fen += str(empty)
-                        empty = 0
-                    fen += ascii_pieces[piece]
-            if empty > 0:
-                fen += str(empty)
-            fen += "/"
-        fen = fen[:-1]
-        fen +=  " "
-        castling = ""
-        if self.castle & castle.wk: castling += "K"
-        if self.castle & castle.wq: castling += "Q"
-        if self.castle & castle.bk: castling += "k"
-        if self.castle & castle.bq: castling += "q"
-        if castling == "": castling = "-"
-        fen += castling + " "
-        if self.en_passant == -1: fen += "-"
-        else: fen += square_to_coordinates[self.en_passant]
-        return fen
+                    array.append(0)
         
+        # Castling
+        array.append(1 if castle.wk & self.castle else 0)
+        array.append(1 if castle.wq & self.castle else 0)
+        array.append(1 if castle.bk & self.castle else 0)
+        array.append(1 if castle.bq & self.castle else 0)
+        
+        # En passant
+        array.append(self.en_passant)
+
+        return "[" + ",".join(map(str, array)) + "]"
+      
     def is_square_attacked(self, square: int, side: int) -> bool:
         """Determine if a given square is attacked by any piece of the specified side."""
 

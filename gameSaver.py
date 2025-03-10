@@ -4,7 +4,6 @@ from headers import *
 import hashlib
 
 scoreboard_cache = None
-counter = None
 
 def load_scoreboards():
     global scoreboard_cache
@@ -14,7 +13,6 @@ def load_scoreboards():
     for i in range(50):
         with open(f"{scoreboard_dir}/scoreboard_{i}.json", "r") as f:
             scoreboard_cache[f"scoreboard_{i}.json"] = json.load(f)
-            counter[f"scoreboard_{i}.json"] = 0
             
 def evaluate_game(game, alpha=0.9):
     positions = game["positions"]
@@ -44,15 +42,6 @@ def update_score(position_data):
     else:
         new_avg = (scoreboard[fen][0] * scoreboard[fen][1] + score) / (scoreboard[fen][1] + 1)
         scoreboard[fen] = (new_avg, scoreboard[fen][1] + 1)
-        
-    counter[filename] += 1
-
-    # Only write back every 1000 updates
-    if counter[filename] % 100_000 == 0:
-        with open(f"{scoreboard_dir}/{filename}", "w") as f:
-            json.dump(scoreboard, f)
-        
-        counter[filename] = 0
     
 
 def save_game_data(game_data):
@@ -65,6 +54,11 @@ def save_game_data(game_data):
         # For each score look it up in the scoreboard and update it
         for position_data in scores:
             update_score(position_data)
+    
+    # Write back all scoreboards
+    for filename in scoreboard_cache.keys():
+        with open(f"{scoreboard_dir}/{filename}", "w") as f:
+            json.dump(scoreboard_cache[filename], f)
 
 def get_filename_from_fen(fen):
     hash_value = int(hashlib.md5(fen.encode()).hexdigest(), 16) % 50
