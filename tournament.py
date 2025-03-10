@@ -22,7 +22,7 @@ class Tournament:
                     self.results["draw"] += 1
             self.game.reset()
             
-            if (i + 1) % 100000 == 0:
+            if (i + 1) % 100 == 0:
                 print(f"Finished {format(i + 1, ',d')} games out of {format(self.num_games, ',d')}")
                 save_game_data(self.games_data)
                 self.games_data = []
