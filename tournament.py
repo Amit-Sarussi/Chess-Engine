@@ -9,6 +9,7 @@ class Tournament:
         self.results = {"player_1": 0, "player_2": 0, "draw": 0}
         self.game = Game(player_1_type, player_2_type)
         self.gameSaver = GameSaver()
+        self.save_interval = 10000
                 
     def start(self):
         for i in range(self.num_games):
@@ -23,12 +24,12 @@ class Tournament:
                     self.results["draw"] += 1
             self.game.reset()
             
-            if (i + 1) % 1000 == 0:
+            if (i + 1) % self.save_interval == 0:
                 print(f"Finished {format(i + 1, ',d')} games out of {format(self.num_games, ',d')}")
                 self.gameSaver.save_game_data(self.games_data)
                 self.games_data = []
                 percent_complete = (i + 1) / self.num_games * 100
-                print(f"Saved the last 1000 games, {percent_complete:.2f}% complete")
+                print(f"Saved the last {self.save_interval} games, {percent_complete:.2f}% complete")
             elif (i + 1) % 100 == 0:
                 print(f"Finished {format(i + 1, ',d')} games out of {format(self.num_games, ',d')}")
             
