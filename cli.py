@@ -1,6 +1,7 @@
 import json
 from math import e
 import os
+from LMDB import LMDBWrapper
 from board import Board
 from game import Game
 from headers import *
@@ -135,27 +136,25 @@ class CLI:
             print(f"Invalid directory: {scoreboard_dir}")
             return
         
+        db = LMDBWrapper("scoreboards")
+        
         ones = 0
         zeros = 0
         betweens = 0
         
-        for i in range(50):
-            print(f"Loading scoreboard {i}")
-            try:
-                with open(f"{scoreboard_dir}/scoreboard_{i}.json", "r") as f:
-                    scoreboard = json.load(f)
-                    
-                for item in scoreboard.values():
-                    if item[0] == 1:
-                        ones += 1
-                    elif item[0] == 0:
-                        zeros += 1
-                    else:
-                        betweens += 1
-            except:
-                print(f"Problem with loading scoreboard {i}.")
+        for item in db.values():
+            if item[0] == 1:
+                ones += 1
+            elif item[0] == 0:
+                zeros += 1
+            else:
+                betweens += 1
                     
         print(f"Ones: {ones} | Zeros: {zeros} | Betweens: {betweens}")
+        
+        total, available = db.get_available_space()
+        used = total - available
+        print(f"Total space: {total:.2f} MB, Available space: {available:.2f} MB, Used space: {used:.2f} MB")
         
     
     
