@@ -127,33 +127,19 @@ class CLI:
     def validate_scoreboards(self, args):
         if len(args) != 2:
             print("Invalid number of arguments.")
-            print("Usage: validate_scoreboards <scoreboard_dir>")
+            print("Usage: validate_scoreboards <scoreboard>")
             return
     
-        scoreboard_dir = args[1]
-        if not os.path.isdir(scoreboard_dir):
-            print(f"Invalid directory: {scoreboard_dir}")
+        scoreboard_path = args[1] + ".md"
+        if not os.path.isfile(scoreboard_path):
+            print(f"Invalid file: {scoreboard_path}")
             return
         
         ones = 0
         zeros = 0
         betweens = 0
         
-        for i in range(50):
-            print(f"Loading scoreboard {i}")
-            try:
-                with open(f"{scoreboard_dir}/scoreboard_{i}.json", "r") as f:
-                    scoreboard = json.load(f)
-                    
-                for item in scoreboard.values():
-                    if item[0] == 1:
-                        ones += 1
-                    elif item[0] == 0:
-                        zeros += 1
-                    else:
-                        betweens += 1
-            except:
-                print(f"Problem with loading scoreboard {i}.")
+        
                     
         print(f"Ones: {ones} | Zeros: {zeros} | Betweens: {betweens}")
         
