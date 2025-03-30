@@ -1,3 +1,4 @@
+from LMDB import LMDBWrapper
 from game import Game
 from gameSaver import GameSaver
 from headers import *
@@ -7,8 +8,9 @@ class Tournament:
         self.num_games = num_games
         self.games_data = []
         self.results = {"player_1": 0, "player_2": 0, "draw": 0}
-        self.game = Game(player_1_type, player_2_type)
-        self.gameSaver = GameSaver()
+        self.db = LMDBWrapper("scoreboards")
+        self.game = Game(player_1_type, player_2_type, self.db)
+        self.gameSaver = GameSaver(self.db)
         self.save_interval = 10000
                 
     def start(self):

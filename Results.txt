@@ -1,0 +1,5 @@
+- Everything, 1,000,000 games
+
+- Only wins, 1,000,000 games
+
+- Insert only 1/4 of draws, 1,000,000 games

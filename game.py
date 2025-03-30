@@ -4,21 +4,26 @@ from headers import *
 from heuristicsPlayer import HeuristicsPlayer
 from hybridPlayer import HybridPlayer
 from randomPlayer import RandomPlayer
+from smartPlayer import SmartPlayer
 
 
 class Game:
-    def __init__(self, player_1_type: int, player_2_type: int) -> None:
+    def __init__(self, player_1_type: int, player_2_type: int, db) -> None:
         self.board: Board = Board(starting_fen=START_POSITION)
         self.board_copy = self.board.copy_board()
         self.game_data = {"start_fen": START_POSITION, "positions": [START_POSITION]}
+        self.db = db
         
         match player_1_type:
             case player_type.random:
                 self.player_1 = RandomPlayer(self.board, color.white)
             case player_type.heuristics:
                 self.player_1 = HeuristicsPlayer(self.board, color.white)
+            case player_type.smart:
+                self.player_1 = SmartPlayer(self.board, self.db, color.white)
             case player_type.hybrid:
                 self.player_1 = HybridPlayer(self.board, color.white)
+            
             case player_type.graphics:
                 print("NOT IMPLMENTED YET")
             case _:

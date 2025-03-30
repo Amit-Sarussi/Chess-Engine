@@ -74,7 +74,8 @@ class player_type(IntEnum):
     heuristics = 1
     hybrid = 2
     graphics = 4
-    network = 5
+    smart = 5
+    network = 4
 
 class game_results(IntEnum):
     white = 0

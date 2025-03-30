@@ -32,8 +32,8 @@ class CLI:
                 self.simulate(args)
             case "play":
                 self.play(args)
-            case "validate_scoreboards":
-                self.validate_scoreboards(args)
+            case "validate":
+                self.validate(args)
             case "perft":
                 self.perft(args)
             case _:
@@ -45,7 +45,7 @@ class CLI:
             ("help", "Display this help message."),
             ("play", "Play a game against a player. Usage: play <opponent_player_type>"),
             ("simulate", "Simulate a tournament between two players. Usage: simulate <num_games> <player_1_type> <player_2_type>"),
-            ("validate_scoreboards", "Validate the scoreboards. Usage: validate_scoreboards <scoreboard_dir>"),
+            ("validate", "Validate the scoreboards. Usage: validate"),
             ("preft", "Run a perft test. Usage: perft <fen> <depth>"),
             ("exit", "Exit the program."),
         ]
@@ -85,18 +85,18 @@ class CLI:
             return
         
         num_games = int(args[1])
-        player_type_converter = {"random": player_type.random, "heuristics": player_type.heuristics, "hybrid": player_type.hybrid}
+        player_type_converter = {"random": player_type.random, "heuristics": player_type.heuristics, "hybrid": player_type.hybrid, "smart": player_type.smart}
         player_1_type = args[2]
         if player_1_type not in player_type_converter:
             print("Invalid player type.")
-            print("player_type must be 'random', 'heuristics', or 'hybrid'")
+            print("player_type must be 'random', 'heuristics', 'smart', or 'hybrid'")
             return
         
         player_1_type = player_type_converter[player_1_type]
         player_2_type = args[3]
         if player_2_type not in player_type_converter:
             print("Invalid player type.")
-            print("player_type must be 'random', 'heuristics', or 'hybrid'")
+            print("player_type must be 'random', 'heuristics' or 'hybrid'")
             return
         
         player_2_type = player_type_converter[player_2_type]
@@ -125,13 +125,8 @@ class CLI:
         
         print(perft_test(starting_fen, depth))
     
-    def validate_scoreboards(self, args):
-        if len(args) != 2:
-            print("Invalid number of arguments.")
-            print("Usage: validate_scoreboards <scoreboard>")
-            return
-    
-        scoreboard_path = args[1] + ".md"
+    def validate(self, args):
+        scoreboard_path = "scoreboards/data.mdb"
         if not os.path.isfile(scoreboard_path):
             print(f"Invalid file: {scoreboard_path}")
             return
@@ -141,10 +136,18 @@ class CLI:
         ones = 0
         zeros = 0
         betweens = 0
+        total = 0
         
-        
-                    
-        print(f"Ones: {ones} | Zeros: {zeros} | Betweens: {betweens}")
+        for _, (eval_value, _) in db.items():
+            if eval_value == 1.0:
+                ones += 1
+            elif eval_value == 0.0:
+                zeros += 1
+            elif 0.0 < eval_value < 1.0:
+                betweens += 1
+            total += 1
+            
+        print(f"Ones: {ones} | Zeros: {zeros} | Betweens: {betweens} | Total: {total}")
         
         total, available = db.get_available_space()
         used = total - available

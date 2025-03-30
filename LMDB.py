@@ -4,7 +4,7 @@ import numpy as np # For more efficient packing
 from typing import Optional, Tuple
 
 class LMDBWrapper:
-    def __init__(self, db_path: str, map_size: int = 300 * 1024**3):
+    def __init__(self, db_path: str, map_size: int = 20 * 1024**3):
         """Initialize LMDB database."""
         self.env = lmdb.open(db_path, map_size=map_size, writemap=True, map_async=True)
 
