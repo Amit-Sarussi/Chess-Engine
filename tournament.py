@@ -11,7 +11,7 @@ class Tournament:
         self.db = LMDBWrapper("scoreboards")
         self.game = Game(player_1_type, player_2_type, self.db)
         self.gameSaver = GameSaver(self.db)
-        self.save_interval = 10000
+        self.save_interval = 100_000
                 
     def start(self):
         for i in range(self.num_games):

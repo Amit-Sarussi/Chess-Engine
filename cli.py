@@ -6,8 +6,13 @@ from board import Board
 from game import Game
 from headers import *
 from perft import perft_test
+from playerSelect import PlayerSelect
 from tournament import Tournament
 import shlex
+import multiprocessing
+from typing import List, Tuple
+from functools import partial
+import numpy as np
 
 class CLI:
     def __init__(self):
@@ -43,7 +48,7 @@ class CLI:
     def help(self):
         commands = [
             ("help", "Display this help message."),
-            ("play", "Play a game against a player. Usage: play <opponent_player_type>"),
+            ("play", "Play a game against a player. Usage: play"),
             ("simulate", "Simulate a tournament between two players. Usage: simulate <num_games> <player_1_type> <player_2_type>"),
             ("validate", "Validate the scoreboards. Usage: validate"),
             ("preft", "Run a perft test. Usage: perft <fen> <depth>"),
@@ -56,22 +61,12 @@ class CLI:
         print("Exiting.")
         self.is_running = False
     
-    def play(self, args): # play <opponent_player_type>
-        # if len(args) != 2:
-        #     print("Invalid number of arguments.")
-        #     print("Usage: play <opponent_player_type>")
-        #     return
+    def play(self, args): # play
+        # Open player select window
+        player_select = PlayerSelect().select()
         
-        # player_type_converter = {"random": player_type.random, "heuristics": player_type.heuristics, "hybrid": player_type.hybrid}
-        # player_type = args[1]
-        # if player_type not in player_type_converter:
-        #     print("Invalid player type.")
-        #     print("player_type must be 'random', 'heuristics', or 'hybrid'")
-        #     return
-        
-        # player_type = player_type_converter[player_type]
-        # self.controller = Controller()
-        ...
+        print(player_select)
+        # Start game
     
     def simulate(self, args): # simulate <num_games> <player_1_type> <player_2_type>
         if len(args) != 4:
@@ -125,33 +120,67 @@ class CLI:
         
         print(perft_test(starting_fen, depth))
     
-    def validate(self, args):
-        scoreboard_path = "scoreboards/data.mdb"
-        if not os.path.isfile(scoreboard_path):
-            print(f"Invalid file: {scoreboard_path}")
-            return
+    def read_chunk(self, start_idx: int, end_idx: int, db_path: str) -> Tuple[int, int, int]:
+        """Worker function to read a chunk of the DB and count categories."""  # Import inside the process
+        from LMDB import LMDBWrapper
+        db = LMDBWrapper(db_path)
+        cursor = db.env.begin().cursor()
         
-        db = LMDBWrapper("scoreboards")
-        
-        ones = 0
-        zeros = 0
-        betweens = 0
-        total = 0
-        
-        for _, (eval_value, _) in db.items():
+        ones = zeros = betweens = 0
+
+        for i, (key_bytes, value_bytes) in enumerate(cursor):
+            if i < start_idx:
+                continue
+            if i >= end_idx:
+                break
+            
+            dtype = np.dtype([('eval', np.float32), ('count', np.uint32)])
+            val = np.frombuffer(value_bytes, dtype=dtype, count=1)[0]
+            eval_value = val['eval']
+
             if eval_value == 1.0:
                 ones += 1
             elif eval_value == 0.0:
                 zeros += 1
-            elif 0.0 < eval_value < 1.0:
+            else:
                 betweens += 1
-            total += 1
             
+
+        return ones, zeros, betweens
+    
+    def validate(self, args):
+        db_path = "scoreboards"
+        scoreboard_file = "scoreboards/data.mdb"
+        if not os.path.isfile(scoreboard_file):
+            print(f"Invalid file: {scoreboard_file}")
+            return
+
+        db = LMDBWrapper(db_path)
+        total_keys = db.count_keys()
+        num_workers = multiprocessing.cpu_count()
+        chunk_size = total_keys // num_workers
+
+        print(f"Processing {total_keys:,} entries with {num_workers} workers")
+
+        with multiprocessing.Pool(num_workers) as pool:
+            chunks = [(i * chunk_size, (i + 1) * chunk_size if i != num_workers - 1 else total_keys)
+                    for i in range(num_workers)]
+            args_for_workers = [(start, end, db_path) for start, end in chunks]
+            results = pool.starmap(self.read_chunk, args_for_workers)
+
+        # Aggregate results
+        ones = sum(r[0] for r in results)
+        zeros = sum(r[1] for r in results)
+        betweens = sum(r[2] for r in results)
+        total = ones + zeros + betweens
+
         print(f"Ones: {ones} | Zeros: {zeros} | Betweens: {betweens} | Total: {total}")
-        
-        total, available = db.get_available_space()
-        used = total - available
-        print(f"Total space: {total:.2f} MB, Available space: {available:.2f} MB, Used space: {used:.2f} MB")
+
+        total_mb, available_mb = db.get_available_space()
+        used = total_mb - available_mb
+        print(f"Total space: {total_mb:.2f} MB, Available: {available_mb:.2f} MB, Used: {used:.2f} MB")
+
+    
         
     
     

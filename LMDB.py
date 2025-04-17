@@ -4,9 +4,9 @@ import numpy as np # For more efficient packing
 from typing import Optional, Tuple
 
 class LMDBWrapper:
-    def __init__(self, db_path: str, map_size: int = 20 * 1024**3):
+    def __init__(self, db_path: str, map_size: int = 100 * 1024**3):
         """Initialize LMDB database."""
-        self.env = lmdb.open(db_path, map_size=map_size, writemap=True, map_async=True)
+        self.env = lmdb.open(db_path, map_size=map_size, writemap=True, map_async=True, readahead=True)
 
     def _encode_key(self, key: str) -> bytes:
         """Encode key (FEN string) using zlib compression."""
@@ -99,6 +99,11 @@ class LMDBWrapper:
         used_pages = info["last_pgno"]
         available_size = (total_pages - used_pages) * page_size
         return info["map_size"] / (1024 ** 2), available_size / (1024 ** 2)
+    
+    def count_keys(self) -> int:
+        """Return the number of keys in the database (approximate but fast)."""
+        with self.env.begin() as txn:
+            return txn.stat()["entries"]
 
     def close(self):
         """Close the database."""
