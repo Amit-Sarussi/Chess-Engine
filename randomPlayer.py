@@ -4,6 +4,10 @@ from player import Player
 from headers import *
 
 class RandomPlayer(Player):
+    """
+    RandomPlayer is a subclass of Player that represents a chess player
+    making random moves on the board.
+    """
     def __init__(self, board: Board, color: int = color.white) -> None:
         super().__init__(board, color)
 

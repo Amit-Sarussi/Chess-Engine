@@ -1,8 +1,12 @@
 import pygame
 
-from headers import DARK_TILE, LIGHT_TILE
+from headers import LIGHT_TILE
 
 class PlayerSelect:
+    """
+    PlayerSelect is a class that handles the player selection screen for a chess game.
+    It allows the user to choose between different player types
+    """
     def __init__(self):
         pygame.init()
         self.screen = pygame.display.set_mode((900, 600))
@@ -15,6 +19,12 @@ class PlayerSelect:
         self.start_hover = False
     
     def select(self):
+        """
+        Runs the player selection screen, handling events, drawing UI elements,
+        and returning the selected player option.
+        Returns:
+            int: The index of the selected player option.
+        """
         running = True
         while running:
             for event in pygame.event.get():
@@ -51,7 +61,10 @@ class PlayerSelect:
         pygame.quit()
         return self.selected
     
-    def draw_titles(self): 
+    def draw_titles(self):
+        """
+        Draws the main title and subtitle on the screen.
+        """
         # Create a text surface for the title
         title_surface = self.font_italiana.render('Chess Engine', True, (0, 0, 0))
         
@@ -71,6 +84,9 @@ class PlayerSelect:
         self.screen.blit(subtitle_surface, subtitle_rect)
     
     def draw_buttons(self):
+        """
+        Draws the player selection buttons with hover and selection effects.
+        """
         texts = ["Random", "Heuristics", "Dictionary", "AI"]
         if not self.buttons_images:
             self.buttons_images = []
@@ -117,6 +133,10 @@ class PlayerSelect:
             self.screen.blit(subtitle_surface, subtitle_rect)
     
     def check_hover_buttons(self, x, y):
+        """
+        Checks if the mouse is hovering over any of the player selection buttons
+        and updates the hover state.
+        """
         for i in range(4):
             if x > 30 + 216 * i and x < 30 + 216 * i + 190 and y > 250 and y < 250 + 190:
                 self.buttons_hover[i] = True
@@ -129,6 +149,9 @@ class PlayerSelect:
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
             
     def draw_start(self):
+        """
+        Draws the "Start" button with hover effects.
+        """
         button_text = "Start"
         button_surface = self.font_crimson.render(button_text, True, (70, 70, 70))
         button_rect = button_surface.get_rect(center=(450, 530))
@@ -150,6 +173,9 @@ class PlayerSelect:
         self.screen.blit(button_surface, button_rect)
     
     def check_hover_start(self, x , y):
+        """
+        Checks if the mouse is hovering over the "Start" button and updates the hover state.
+        """
         if x > 450 - 75 and x < 450 + 75 and y > 530 - 45 and y < 530 + 40:
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
             self.start_hover = True

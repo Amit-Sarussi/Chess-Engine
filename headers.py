@@ -26,6 +26,7 @@ class piece(IntEnum):
     P,N,B,R,Q,K,p,n,b,r,q,k = range(12)
 
 ascii_pieces: Final = "PNBRQKpnbrqk"
+pieces_sprites: Final = ["wp", "wn", "wb", "wr", "wq", "wk", "bp", "bn", "bb", "br", "bq", "bk"]
 unicode_pieces: Final = "♙♘♗♖♕♔♟♞♝♜♛♚"
 char_pieces: Final = {
     'P': piece.P,
@@ -72,7 +73,6 @@ class castle(IntEnum):
 class player_type(IntEnum):
     random = 0
     heuristics = 1
-    hybrid = 2
     graphics = 4
     smart = 5
     network = 4
@@ -201,4 +201,7 @@ rook_magic_numbers: Final = [
 
 
 LIGHT_TILE: Final = (240, 217, 181)
+LIGHT_TILE_SELECTED: Final = (207, 209, 128)
 DARK_TILE: Final = (181, 136, 99)
+DARK_TILE_SELECTED: Final = (170, 162, 80)
+WINDOW_SIZE: Final = 1000

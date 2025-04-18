@@ -4,11 +4,20 @@ from player import Player
 from headers import *
 
 class SmartPlayer(Player):
+    """
+    SmartPlayer is a subclass of Player that represents a chess player 
+    using a database to evaluate and make moves.
+    """
     def __init__(self, board: Board, db, color: int = color.white) -> None:
         super().__init__(board, color)
         self.db = db
 
     def make_player_move(self):
+        """
+        Executes the best possible move for the player based on pre-evaluated scores
+        from a database or a default score. Returns the chosen move or None if no
+        valid moves are available.
+        """
         all_moves = self.board.generate_moves()
         moves_with_evaluations = []
         

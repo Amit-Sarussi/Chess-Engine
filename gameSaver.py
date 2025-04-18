@@ -10,6 +10,12 @@ class GameSaver:
         self.db.close()
         
     def evaluate_game(self, game, alpha=0.98):
+        """
+        Evaluates a chess game and updates the evaluation data for each position.
+        This method processes the positions of a chess game, calculates evaluations
+        for each position based on the game's result and a decay factor (alpha), 
+        and updates the evaluation data in the batch or database.
+        """
         positions = game["positions"]
         relevant_positions = positions[1::2]
         relevant_positions.reverse()
@@ -38,6 +44,9 @@ class GameSaver:
             self.batch_data[fen] = (new_eval, count + 1)
     
     def save_scores(self):
+        """
+        Saves the current batch of game scores to the database.
+        """
         self.db.put_batch(self.batch_data)
         self.batch_data = {}
 

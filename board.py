@@ -115,8 +115,7 @@ class Board:
         # Update clocks
         self.halfmove = int(halfmove)
         self.fullmove = int(fullmove)
-    
-    
+     
     @staticmethod
     def validate_fen(fen: str) -> bool:
         """Validates a FEN string."""

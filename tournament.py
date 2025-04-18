@@ -4,6 +4,9 @@ from gameSaver import GameSaver
 from headers import *
 
 class Tournament:
+    """
+    A class to manage and simulate a chess tournament between two players.
+    """
     def __init__(self, player_1_type: int, player_2_type: int, num_games: int = 1):
         self.num_games = num_games
         self.games_data = []
@@ -12,8 +15,18 @@ class Tournament:
         self.game = Game(player_1_type, player_2_type, self.db)
         self.gameSaver = GameSaver(self.db)
         self.save_interval = 100_000
-                
-    def start(self):
+    
+    def start(self):      
+        """
+        Starts the tournament and manages the execution of games.
+
+        Steps:
+        1. Plays each game and records the result.
+        2. Updates scores for Player 1, Player 2, or draws based on the result.
+        3. Resets the game state after each game.
+        4. Saves game data every `self.save_interval` games and prints progress.
+        5. Prints progress updates every 100 games.
+        """
         for i in range(self.num_games):
             result = self.game.play()
             self.games_data.append(result)
@@ -36,6 +49,10 @@ class Tournament:
                 print(f"Finished {format(i + 1, ',d')} games out of {format(self.num_games, ',d')}")
             
     def print_results(self):
+        """
+        Prints the results of the tournament, including the number of games played,
+        the win rates for Player 1 and Player 2, and the draw rate.
+        """
         win_rate_1 = self.results["player_1"] / self.num_games * 100
         win_rate_2 = self.results["player_2"] / self.num_games * 100
         draw_rate = self.results["draw"] / self.num_games * 100
