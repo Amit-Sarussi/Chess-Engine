@@ -1,4 +1,6 @@
+import os
 import pygame
+import ctypes
 
 from headers import LIGHT_TILE
 
@@ -10,13 +12,16 @@ class PlayerSelect:
     def __init__(self):
         pygame.init()
         self.screen = pygame.display.set_mode((900, 600))
-        self.font_italiana = pygame.font.Font('assets/Italiana-Regular.ttf', 80)
-        self.font_crimson = pygame.font.Font('assets/CrimsonText-SemiBold.ttf', 40)
-        self.font_crimson_small = pygame.font.Font('assets/CrimsonText-SemiBold.ttf', 30)
+        self.font_italiana = pygame.font.Font('assets/fonts/Italiana.ttf', 80)
+        self.font_crimson = pygame.font.Font('assets/fonts/CrimsonText.ttf', 40)
+        self.font_crimson_small = pygame.font.Font('assets/fonts/CrimsonText.ttf', 30)
         self.buttons_images = None
         self.selected = 0
         self.buttons_hover = [False, False, False, False]
         self.start_hover = False
+        pygame.display.set_caption("Chess Engine - Player Selection")
+        icon = pygame.image.load("assets/icon.png")
+        pygame.display.set_icon(icon)
     
     def select(self):
         """
@@ -91,7 +96,7 @@ class PlayerSelect:
         if not self.buttons_images:
             self.buttons_images = []
             for text in texts:
-                button_image = pygame.image.load(f'assets/{text.lower()}.png')
+                button_image = pygame.image.load(f'assets/sprites/{text.lower()}.png')
                 button_image = pygame.transform.smoothscale(button_image, (110, 110))
                 self.buttons_images.append(button_image)
         

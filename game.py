@@ -1,7 +1,9 @@
+import pygame
 from attacks import START_POSITION
 from board import Board
 from headers import *
 from heuristicsPlayer import HeuristicsPlayer
+from move import get_move_capture
 from randomPlayer import RandomPlayer
 from smartPlayer import SmartPlayer
 
@@ -15,6 +17,7 @@ class Game:
         self.board_copy = self.board.copy_board()
         self.game_data = {"start_fen": START_POSITION, "positions": [START_POSITION]}
         self.db = db
+        self.play_sound = None
         
         match player_1_type:
             case player_type.random:
@@ -101,8 +104,9 @@ class Game:
         self.game_data["positions"].append(self.board.to_scoreboard_array())
         if self.board.halfmove > 50:
             self.results = game_results.stalemate
+            self.play_sound("game-end")
             return True, None, self.results
-
+        
         # Make the other player's move
         move_result = self.player_2.make_player_move()
         
@@ -110,13 +114,22 @@ class Game:
         if move_result == None:
             if self.board.is_king_in_check(self.board.turn):
                 self.results = game_results.black if self.board.turn == color.white else game_results.white
+                self.play_sound("checkmate")
             else:
                 self.results = game_results.stalemate
+            self.play_sound("game-end")
             return True, None, self.results
+        else:
+            if get_move_capture(move):
+                self.play_sound("capture")
+            else:
+                self.play_sound("move")
+            self.game_data["positions"].append(self.board.to_scoreboard_array())
 
         # Check if the graphics player have a valid move to play
         if self.board.halfmove > 50:
             self.results = game_results.stalemate
+            self.play_sound("game-end")
             return True, move_result, self.results
 
         # Check if the graphics player have a valid move to play
@@ -126,10 +139,16 @@ class Game:
         if graphics_move_result == None: # If move is not possible
             if self.board.is_king_in_check(self.board.turn):
                 self.results = game_results.black if self.board.turn == color.white else game_results.white
+                self.play_sound("checkmate")
             else:
                 self.results = game_results.stalemate
+            self.play_sound("game-end")
             return True, move_result, self.results
         else:
+            if get_move_capture(move_result):
+                self.play_sound("capture")
+            else:
+                self.play_sound("move")
             self.board.restore_board(*board_copy)
         
         return True, move_result, None

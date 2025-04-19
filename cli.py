@@ -3,6 +3,7 @@ from math import e
 import os
 from LMDB import LMDBWrapper
 from board import Board
+from controller import Controller
 from game import Game
 from headers import *
 from perft import perft_test
@@ -64,9 +65,8 @@ class CLI:
     def play(self, args): # play
         # Open player select window
         player_select = PlayerSelect().select()
-        
-        print(player_select)
-        # Start game
+        Controller(player_select).start()
+
     
     def simulate(self, args): # simulate <num_games> <player_1_type> <player_2_type>
         if len(args) != 4:

@@ -25,12 +25,10 @@ class Controller:
         Initializes and starts the chess game.
         """
         self.game = Game(player_type.graphics, self.opponent_type)
-        self.graphics = Graphics(self.game.board, self)
+        self.graphics = Graphics(self.game, self)
     
     def make_move(self, move):
         """
         Executes a move in the current game.
         """
         return self.game.make_move(move)
-
-Controller(0).start()
