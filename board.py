@@ -196,6 +196,58 @@ class Board:
         array.append(self.en_passant)
 
         return "[" + ",".join(map(str, array)) + "]"
+    
+    def from_scoreboard_array(self, scoreboard_str: str) -> str:
+        import re
+
+        # Parse the array string into integers
+        array = list(map(int, re.findall(r'\d+', scoreboard_str)))
+        assert len(array) == 64 + 4 + 1, "Invalid scoreboard array length"
+
+        piece_map = {
+            1: 'P', 2: 'N', 3: 'B', 4: 'R', 5: 'Q', 6: 'K',
+            7: 'p', 8: 'n', 9: 'b', 10: 'r', 11: 'q', 12: 'k'
+        }
+
+        # Reconstruct board part of FEN
+        fen_parts = []
+        for rank in range(8):
+            empty = 0
+            row = ''
+            for file in range(8):
+                val = array[rank * 8 + file]
+                if val == 0:
+                    empty += 1
+                else:
+                    if empty > 0:
+                        row += str(empty)
+                        empty = 0
+                    row += piece_map[val]
+            if empty > 0:
+                row += str(empty)
+            fen_parts.append(row)
+        board_fen = "/".join(fen_parts)
+
+        # Castling
+        wk, wq, bk, bq = array[64:68]
+        castling_fen = (
+            ('K' if wk else '') +
+            ('Q' if wq else '') +
+            ('k' if bk else '') +
+            ('q' if bq else '')
+        ) or '-'
+
+        # En passant
+        ep_square = array[68]
+        if ep_square == 0:
+            ep_fen = '-'
+        else:
+            file = ep_square % 8
+            rank = ep_square // 8
+            ep_fen = chr(ord('a') + file) + str(8 - rank)
+
+        # Assume it's always white's turn and halfmove/fullmove are 0
+        return f"{board_fen} w {castling_fen} {ep_fen} 0 1"
       
     def is_square_attacked(self, square: int, side: int) -> bool:
         """Determine if a given square is attacked by any piece of the specified side."""

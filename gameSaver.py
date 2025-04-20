@@ -1,4 +1,5 @@
 from LMDB import LMDBWrapper
+import random
 from headers import *  # assuming you have your game_results and other constants defined
 
 class GameSaver:
@@ -25,9 +26,11 @@ class GameSaver:
         if game["result"] == game_results.white:
             evaluations.append((relevant_positions[0], 1))
         elif game["result"] == game_results.black:
+            return
             evaluations.append((relevant_positions[0], 0))
         else:
-            evaluations.append((relevant_positions[0], 0.3))
+            return
+            evaluations.append((relevant_positions[0], 0))
         
         for index, board in enumerate(relevant_positions[1:]):
             evaluations.append((board, alpha * evaluations[index][1]))
@@ -37,7 +40,8 @@ class GameSaver:
             if fen in self.batch_data:
                 prev_eval, count = self.batch_data[fen]
             else:
-                prev_eval, count = self.db.get_or_default(fen, (0.0, 0))
+                # prev_eval, count = self.db.get_or_default(fen, (0.0, 0))
+                prev_eval, count = 0.0, 0
 
             # Update evaluation
             new_eval = (prev_eval * count + eval_value) / (count + 1)

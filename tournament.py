@@ -39,14 +39,16 @@ class Tournament:
                     self.results["draw"] += 1
             self.game.reset()
             
-            if (i + 1) % self.save_interval == 0:
+            # if (i + 1) % self.save_interval == 0:
+            #     print(f"Finished {format(i + 1, ',d')} games out of {format(self.num_games, ',d')}")
+            #     self.gameSaver.save_game_data(self.games_data)
+            #     self.games_data = []
+            #     percent_complete = (i + 1) / self.num_games * 100
+            #     print(f"Saved the last {self.save_interval} games, {percent_complete:.2f}% complete")
+            if (i + 1) % 100 == 0:
                 print(f"Finished {format(i + 1, ',d')} games out of {format(self.num_games, ',d')}")
-                self.gameSaver.save_game_data(self.games_data)
-                self.games_data = []
-                percent_complete = (i + 1) / self.num_games * 100
-                print(f"Saved the last {self.save_interval} games, {percent_complete:.2f}% complete")
-            elif (i + 1) % 100 == 0:
-                print(f"Finished {format(i + 1, ',d')} games out of {format(self.num_games, ',d')}")
+                
+        self.gameSaver.save_game_data(self.games_data)
             
     def print_results(self):
         """

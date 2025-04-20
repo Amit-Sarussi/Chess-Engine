@@ -37,7 +37,7 @@ class SmartPlayer(Player):
             if (data := self.db.get(FEN)) is not None:
                 moves_with_evaluations.append((move, data[0]))
             else:
-                moves_with_evaluations.append((move, 0.3))
+                moves_with_evaluations.append((move, 0))
         
         moves_with_evaluations.sort(key=lambda x: x[1], reverse=True)
         while len(moves_with_evaluations) != 0:

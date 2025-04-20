@@ -1,3 +1,4 @@
+import random
 import lmdb
 import zlib  # For compressing FEN strings
 import numpy as np # For more efficient packing
@@ -109,3 +110,23 @@ class LMDBWrapper:
         """Close the database."""
         self.env.sync()
         self.env.close()
+        
+    def get_random_item(self) -> Optional[Tuple[str, Tuple[float, int]]]:
+        """Retrieve a random key-value pair from the database."""
+        with self.env.begin() as txn:
+            with txn.cursor() as cursor:
+                total = txn.stat()["entries"]
+                if total == 0:
+                    return None
+                index = random.randint(0, total - 1)
+                if cursor.first():
+                    for _ in range(index):
+                        if not cursor.next():
+                            break
+                    key = self._decode_key(cursor.key())
+                    dtype = np.dtype([('eval', np.float32), ('count', np.uint32)])
+                    value_array = np.frombuffer(cursor.value(), dtype=dtype, count=1)
+                    value = value_array[0]['eval'], value_array[0]['count']
+                    return key, value
+                else:
+                    return None

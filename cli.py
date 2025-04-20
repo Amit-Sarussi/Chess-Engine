@@ -80,18 +80,18 @@ class CLI:
             return
         
         num_games = int(args[1])
-        player_type_converter = {"random": player_type.random, "heuristics": player_type.heuristics, "hybrid": player_type.hybrid, "smart": player_type.smart}
+        player_type_converter = {"random": player_type.random, "heuristics": player_type.heuristics, "smart": player_type.smart}
         player_1_type = args[2]
         if player_1_type not in player_type_converter:
             print("Invalid player type.")
-            print("player_type must be 'random', 'heuristics', 'smart', or 'hybrid'")
+            print("player_type must be 'random', 'heuristics', or 'smart'")
             return
         
         player_1_type = player_type_converter[player_1_type]
         player_2_type = args[3]
         if player_2_type not in player_type_converter:
             print("Invalid player type.")
-            print("player_type must be 'random', 'heuristics' or 'hybrid'")
+            print("player_type must be 'random', or 'heuristics'")
             return
         
         player_2_type = player_type_converter[player_2_type]
