@@ -15,6 +15,7 @@ class Graphics:
         pygame.init()
         pygame.mixer.init()
         self.board = game.board
+        self.game = game
         game.play_sound = self.play_sound
         self.controller = controller
         self.screen = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
@@ -24,8 +25,11 @@ class Graphics:
         self.holden_piece = None
         self.promotion_mode = False
         self.cursor_position = (0, 0)
+        self.is_spectating = False
+        self.show_win_screen = False
         self.sprites_cache = self.load_sprites()  # Cache the sprites
         self.font = pygame.font.Font("assets/fonts/ChessSans.ttf", 24)
+        self.big_font = pygame.font.Font("assets/fonts/ChessSans.ttf", 36)
         pygame.display.set_caption("Chess Engine | Amit Sarussi")
         icon = pygame.image.load("assets/icon.png")
         pygame.display.set_icon(icon)
@@ -85,9 +89,13 @@ class Graphics:
                     if self.promotion_mode:
                         self.check_promotion_hover_square(x, y)
                         self.determine_promotion_cursor_shape()
+                    
                     else:      
                         self.check_hover_square(x, y)
                         self.determine_cursor_shape()
+                    
+                    if self.show_win_screen:
+                        self.close_button_hover()
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     self.mouse_down()
                 if event.type == pygame.MOUSEBUTTONUP:
@@ -99,7 +107,12 @@ class Graphics:
             self.draw_squares()
             self.draw_coordinates()
             self.draw_pieces()
-            self.draw_holden_piece()
+            
+            if not self.is_spectating:
+                self.draw_holden_piece()
+            
+            if self.show_win_screen:
+                self.draw_game_over()
             
             if self.promotion_mode:
                 self.draw_promotion_mode()
@@ -215,7 +228,7 @@ class Graphics:
         Otherwise, the cursor is set to the default arrow shape.
         """
         # Hand if hovered on its own piece
-        if self.board.occupancies[color.white] & (1 << self.hovered_square):
+        if self.board.occupancies[color.white] & (1 << self.hovered_square) and self.is_spectating == False:
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
         else:
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
@@ -263,11 +276,59 @@ class Graphics:
             offset = (WINDOW_SIZE // 16)  # Half of the sprite size
             self.screen.blit(sprite, (x - offset, y - offset))  # Draw the sprite centered on the cursor
     
+    def draw_game_over(self):
+        """
+        Draws a rectangle in the middle of the screen to indicate the game over state.
+        """
+        rect_width = WINDOW_SIZE // 3.6
+        rect_height = WINDOW_SIZE // 5
+        rect_x = (WINDOW_SIZE - rect_width) // 2
+        rect_y = (WINDOW_SIZE - rect_height) // 2
+        pygame.draw.rect(self.screen, (38, 36, 33), (rect_x, rect_y, rect_width, rect_height), border_radius=20)
+        
+        # Render the "Game Over" text
+        if self.game.results == game_results.stalemate:
+            string = "Stalemate"
+        elif self.game.results == game_results.black:
+            string = "Black won"
+        elif self.game.results == game_results.white:
+            string = "White won"
+        else:
+            string = "Game Over"
+        text = self.big_font.render(string, True, (255, 255, 255))
+        text_rect = text.get_rect(center=(WINDOW_SIZE // 2, rect_y + rect_height // 4))
+        self.screen.blit(text, text_rect)
+
+        rect_width = WINDOW_SIZE // 3.6 * 0.8
+        rect_height = 70 
+        rect_x = (WINDOW_SIZE - rect_width) // 2
+        rect_y = (WINDOW_SIZE - WINDOW_SIZE // 5) // 2 + WINDOW_SIZE // 5 - rect_height - 20
+        pygame.draw.rect(self.screen, (141, 179, 86), (rect_x, rect_y, rect_width, rect_height), border_radius=20)
+        
+        # Render the "Close" text
+        close_text = self.font.render("Close", True, (255, 255, 255))
+        close_text_rect = close_text.get_rect(center=(WINDOW_SIZE // 2, rect_y + rect_height // 2))
+        self.screen.blit(close_text, close_text_rect)
+    
+    def close_button_hover(self):
+        """
+        Checks if the mouse is hovering over the close button in the game over screen.
+        """
+        x, y = self.cursor_position
+        rect_width = WINDOW_SIZE // 3.6 * 0.8
+        rect_height = 70 
+        rect_x = (WINDOW_SIZE - rect_width) // 2
+        rect_y = (WINDOW_SIZE - WINDOW_SIZE // 5) // 2 + WINDOW_SIZE // 5 - rect_height - 20
+        if rect_x < x < rect_x + rect_width and rect_y < y < rect_y + rect_height:
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+        else:
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+    
     def mouse_down(self):
         """
         Handles the mouse down event for the chessboard.
         """
-        if self.board.occupancies[color.white] & (1 << self.hovered_square):
+        if self.board.occupancies[color.white] & (1 << self.hovered_square) and self.is_spectating == False:
             self.holden_square = self.hovered_square
         self.last_squares = [self.holden_square]
     
@@ -280,7 +341,17 @@ class Graphics:
         the game controller. If the move is valid, it updates the game state and 
         handles the bot's response move if applicable.
         """
-        if self.promotion_mode:
+        if self.is_spectating:
+            # Check if the user clicked on the close button
+            x, y = self.cursor_position
+            rect_width = WINDOW_SIZE // 3.6 * 0.8
+            rect_height = 70
+            rect_x = (WINDOW_SIZE - rect_width) // 2
+            rect_y = (WINDOW_SIZE - WINDOW_SIZE // 5) // 2 + WINDOW_SIZE // 5 - rect_height - 20
+            if rect_x < x < rect_x + rect_width and rect_y < y < rect_y + rect_height:
+                self.show_win_screen = False
+            return
+        if self.promotion_mode and self.is_spectating == False:
             # Get the promoted piece
             if self.promotion_hover is not None:
                 promotion = self.promotion_hover
@@ -305,11 +376,15 @@ class Graphics:
             status, bots_move, game_state = self.controller.make_move(move)
             if bots_move:
                 self.last_squares = [get_move_source(bots_move), get_move_target(bots_move)]
-                
+            
+            if game_state != None:
+                self.is_spectating = True
+                self.show_win_screen = True
+                        
             self.holden_square = None
             self.holden_piece = None
             self.promotion_mode = False
-        else:
+        elif self.is_spectating == False:
             self.last_squares = [self.holden_square]
             if self.holden_square is not None:
                 self.from_square = self.holden_square
@@ -320,12 +395,10 @@ class Graphics:
                     # Promotion
                     if self.promotion_mode == False:
                         if self.holden_piece == piece.P and (self.to_square // 8) == 7 and (self.from_square // 8) == 6:
-                            # Before turning on promotion mode, check if the to square is empty
-                            if self.board.occupancies[color.both] & (1 << self.to_square) == 0:
-                                self.promotion_mode = True
-                                self.holden_square = None
-                                self.holden_piece = None
-                                return
+                            self.promotion_mode = True
+                            self.holden_square = None
+                            self.holden_piece = None
+                            return
                     
                     promotion = 0
                         
@@ -343,6 +416,11 @@ class Graphics:
                     status, bots_move, game_state = self.controller.make_move(move)
                     if bots_move:
                         self.last_squares = [get_move_source(bots_move), get_move_target(bots_move)]
+                    
+                    if game_state != None:
+                        self.is_spectating = True
+                        self.show_win_screen = True
                         
                 self.holden_square = None
                 self.holden_piece = None
+        

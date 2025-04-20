@@ -18,6 +18,13 @@ class Game:
         self.game_data = {"start_fen": START_POSITION, "positions": [START_POSITION]}
         self.db = db
         self.play_sound = None
+        self.results = None
+        
+        # Set the player types
+        self.player_1 = None
+        self.player_2 = None
+        
+        # Initialize players based on their types
         
         match player_1_type:
             case player_type.random:
@@ -42,7 +49,7 @@ class Game:
             case _:
                 print("NOT IMPLMENTED YET")
         
-        self.results = None
+        
         
     def reset(self):
         """
