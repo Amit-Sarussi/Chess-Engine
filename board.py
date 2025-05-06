@@ -3,6 +3,7 @@ from bit import *
 from attacks import init_leapers_attacks, get_bishop_attacks, get_rook_attacks, get_queen_attacks
 from magics import *
 from move import *
+import re
 
 class Board:
     def __init__(self, starting_fen: str = START_POSITION) -> None:
@@ -45,6 +46,7 @@ class Board:
         print(f"  Castle: {castle_str}\n")
    
     def copy_board(self):
+        """Creates and returns a copy of the current board state."""
         bitboards_copy = self.bitboards.copy()
         occupancies_copy = self.occupancies.copy()
         turn_copy = self.turn  
@@ -56,6 +58,7 @@ class Board:
         return (bitboards_copy, occupancies_copy, turn_copy, castle_copy, en_passant_copy, halfmove_copy, fullmove_copy)
     
     def restore_board(self, bitboards_copy, occupancies_copy, turn_copy, castle_copy, en_passant_copy, halfmove_copy, fullmove_copy):
+        """Restores the board state from the provided copies of attributes."""
         self.bitboards = bitboards_copy.copy()
         self.occupancies = occupancies_copy.copy()
         self.turn = turn_copy
@@ -115,7 +118,7 @@ class Board:
         # Update clocks
         self.halfmove = int(halfmove)
         self.fullmove = int(fullmove)
-     
+    
     @staticmethod
     def validate_fen(fen: str) -> bool:
         """Validates a FEN string."""
@@ -174,6 +177,7 @@ class Board:
         return True
 
     def to_scoreboard_array(self) -> str:
+        """Converts the current board state to a scoreboard array."""
         array = []
         for rank in range(8):
             for file in range(8):
@@ -198,8 +202,7 @@ class Board:
         return "[" + ",".join(map(str, array)) + "]"
     
     def from_scoreboard_array(self, scoreboard_str: str) -> str:
-        import re
-
+        """Converts a scoreboard array string to a FEN string."""
         # Parse the array string into integers
         array = list(map(int, re.findall(r'\d+', scoreboard_str)))
         assert len(array) == 64 + 4 + 1, "Invalid scoreboard array length"
@@ -211,7 +214,7 @@ class Board:
 
         # Reconstruct board part of FEN
         fen_parts = []
-        for rank in range(8):
+        for rank in reversed(range(8)):
             empty = 0
             row = ''
             for file in range(8):
@@ -517,7 +520,6 @@ class Board:
                 
     def make_move(self, move: int, move_flag: int):
         """Make a move on the board."""
-        # Quiet move
         if move_flag == move_type.all_moves:
             # Preserve board state
             state = self.copy_board()
@@ -624,6 +626,7 @@ class Board:
                 return 0
             
     def is_king_in_check(self, king_color):
+        """Check if the king of the given color is in check."""
         # get the king square
         king_square = get_ls1b_index(self.bitboards[piece.K if king_color == color.white else piece.k])
         

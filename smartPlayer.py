@@ -8,7 +8,7 @@ class SmartPlayer(Player):
     SmartPlayer is a subclass of Player that represents a chess player 
     using a database to evaluate and make moves.
     """
-    def __init__(self, board: Board, db, color: int = color.white) -> None:
+    def __init__(self, board: Board, db, color: int = color.black) -> None:
         super().__init__(board, color)
         self.db = db
 

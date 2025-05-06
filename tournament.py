@@ -2,6 +2,7 @@ from LMDB import LMDBWrapper
 from game import Game
 from gameSaver import GameSaver
 from headers import *
+from tensorflow.keras.models import load_model # type: ignore
 
 class Tournament:
     """
@@ -12,7 +13,8 @@ class Tournament:
         self.games_data = []
         self.results = {"player_1": 0, "player_2": 0, "draw": 0}
         self.db = LMDBWrapper("scoreboards")
-        self.game = Game(player_1_type, player_2_type, self.db)
+        self.model = load_model('model.h5')
+        self.game = Game(player_1_type, player_2_type, self.db, self.model)
         self.gameSaver = GameSaver(self.db)
         self.save_interval = 100_000
     
@@ -45,7 +47,7 @@ class Tournament:
             #     self.games_data = []
             #     percent_complete = (i + 1) / self.num_games * 100
             #     print(f"Saved the last {self.save_interval} games, {percent_complete:.2f}% complete")
-            if (i + 1) % 100 == 0:
+            if (i + 1) % 1 == 0:
                 print(f"Finished {format(i + 1, ',d')} games out of {format(self.num_games, ',d')}")
                 
         self.gameSaver.save_game_data(self.games_data)
@@ -59,7 +61,7 @@ class Tournament:
         win_rate_2 = self.results["player_2"] / self.num_games * 100
         draw_rate = self.results["draw"] / self.num_games * 100
         print(f"\n{self.num_games} games were played.")
-        print(f"{self.results["player_1"]} ({win_rate_1:.2f}%) wins for Player 1")
-        print(f"{self.results["player_2"]} ({win_rate_2:.2f}%) wins for Player 2")
-        print(f"{self.results["draw"]} ({draw_rate:.2f}%) draws.\n")
+        print(f"{self.results['player_1']} ({win_rate_1:.2f}%) wins for Player 1")
+        print(f"{self.results['player_2']} ({win_rate_2:.2f}%) wins for Player 2")
+        print(f"{self.results['draw']} ({draw_rate:.2f}%) draws.\n")
 

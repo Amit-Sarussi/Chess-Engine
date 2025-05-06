@@ -1,4 +1,5 @@
 import pygame
+from aiPlayer import AIPlayer
 from attacks import START_POSITION
 from board import Board
 from headers import *
@@ -12,11 +13,12 @@ class Game:
     """
     A class to represent a chess game, supporting both automated play and graphical interaction.
     """
-    def __init__(self, player_1_type: int, player_2_type: int, db = None) -> None:
+    def __init__(self, player_1_type: int, player_2_type: int, db, model) -> None:
         self.board: Board = Board(starting_fen=START_POSITION)
         self.board_copy = self.board.copy_board()
         self.game_data = {"start_fen": START_POSITION, "positions": [START_POSITION]}
         self.db = db
+        self.model = model
         self.play_sound = None
         self.results = None
         
@@ -32,7 +34,7 @@ class Game:
             case player_type.heuristics:
                 self.player_1 = HeuristicsPlayer(self.board, color.white)
             case player_type.smart:
-                self.player_1 = SmartPlayer(self.board, self.db, color.white)
+                print("PLAYER 1 CAN'T BE SMART")
             
             case player_type.graphics:
                 self.player_1 = RandomPlayer(self.board, color.white) # He wont be played but will be used to check if any move is possible
@@ -44,12 +46,14 @@ class Game:
                 self.player_2 = RandomPlayer(self.board, color.black)
             case player_type.heuristics:
                 self.player_2 = HeuristicsPlayer(self.board, color.black)
+            case player_type.smart:
+                self.player_2 = SmartPlayer(self.board, self.db, color.black)
+            case player_type.ai:
+                self.player_2 = AIPlayer(self.board, self.model, color.black)
             case player_type.graphics:
                 print("PLAYER 2 CAN'T BE GRAPHICS")
             case _:
                 print("NOT IMPLMENTED YET")
-        
-        
         
     def reset(self):
         """

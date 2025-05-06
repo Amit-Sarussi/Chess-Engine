@@ -5,9 +5,9 @@ import numpy as np # For more efficient packing
 from typing import Optional, Tuple
 
 class LMDBWrapper:
-    def __init__(self, db_path: str, map_size: int = 100 * 1024**3):
+    def __init__(self, db_path: str, map_size: int = 10 * 1024**3):
         """Initialize LMDB database."""
-        self.env = lmdb.open(db_path, map_size=map_size, writemap=True, map_async=True, readahead=True)
+        self.env = lmdb.open(db_path, map_size=map_size, writemap=True, map_async=True, readahead=True, lock=False, max_readers=126)
 
     def _encode_key(self, key: str) -> bytes:
         """Encode key (FEN string) using zlib compression."""

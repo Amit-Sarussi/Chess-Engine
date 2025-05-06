@@ -1,18 +1,14 @@
-import json
-from math import e
 import os
 from LMDB import LMDBWrapper
 from board import Board
 from controller import Controller
-from game import Game
 from headers import *
 from perft import perft_test
 from playerSelect import PlayerSelect
 from tournament import Tournament
 import shlex
 import multiprocessing
-from typing import List, Tuple
-from functools import partial
+from typing import Tuple
 import numpy as np
 
 class CLI:
@@ -21,12 +17,14 @@ class CLI:
         self.start()
     
     def start(self):
+        """Main loop for the CLI."""
         self.welcome_text()
         print("Type 'help' for a list of commands.")
         while self.is_running:
             self.process_input()
     
     def process_input(self):
+        """Process user input."""
         command = input("> ")
         args = shlex.split(command)
         match args[0]:
@@ -47,6 +45,7 @@ class CLI:
         print()
     
     def help(self):
+        """Display help information."""
         commands = [
             ("help", "Display this help message."),
             ("play", "Play a game against a player. Usage: play"),
@@ -59,16 +58,19 @@ class CLI:
             print(f"[{command[0]}] - {command[1]}")
             
     def end(self):
+        """Exit the program."""
         print("Exiting.")
         self.is_running = False
     
     def play(self, args): # play
+        """Start a new game."""
         # Open player select window
         player_select = PlayerSelect().select()
         Controller(player_select).start()
 
     
     def simulate(self, args): # simulate <num_games> <player_1_type> <player_2_type>
+        """Simulate a tournament between two players."""
         if len(args) != 4:
             print("Invalid number of arguments.")
             print("Usage: simulate <num_games> <player_1_type> <player_2_type>")
@@ -80,18 +82,18 @@ class CLI:
             return
         
         num_games = int(args[1])
-        player_type_converter = {"random": player_type.random, "heuristics": player_type.heuristics, "smart": player_type.smart}
+        player_type_converter = {"random": player_type.random, "heuristics": player_type.heuristics, "smart": player_type.smart, "ai": player_type.ai}
         player_1_type = args[2]
         if player_1_type not in player_type_converter:
             print("Invalid player type.")
-            print("player_type must be 'random', 'heuristics', or 'smart'")
+            print("player_type must be 'random', or 'heuristics'")
             return
         
         player_1_type = player_type_converter[player_1_type]
         player_2_type = args[3]
         if player_2_type not in player_type_converter:
             print("Invalid player type.")
-            print("player_type must be 'random', or 'heuristics'")
+            print("player_type must be 'random', 'heuristics', 'smart', or 'ai'")
             return
         
         player_2_type = player_type_converter[player_2_type]
@@ -101,6 +103,7 @@ class CLI:
         tournament.print_results()
         
     def perft(self, args): # perft <fen> <depth>
+        """Run a perft test."""
         if len(args) != 3:
             print("Invalid number of arguments.")
             print("Usage: perft <fen> <depth>")
@@ -125,6 +128,8 @@ class CLI:
         from LMDB import LMDBWrapper
         db = LMDBWrapper(db_path)
         cursor = db.env.begin().cursor()
+        counter = 0
+        counter3 = 0
         
         ones = zeros = betweens = 0
 
@@ -137,11 +142,20 @@ class CLI:
             dtype = np.dtype([('eval', np.float32), ('count', np.uint32)])
             val = np.frombuffer(value_bytes, dtype=dtype, count=1)[0]
             eval_value = val['eval']
+            key = db._decode_key(key_bytes)
 
             if eval_value == 1.0:
                 ones += 1
+                if start_idx == 0 and counter < 2:
+                    print(f"Key: {key} | Value: {eval_value}")
+                    counter += 1
             elif eval_value == 0.0:
                 zeros += 1
+            elif eval_value == 0.98:
+                betweens += 1
+                if start_idx == 0 and counter3 < 3:
+                    print(f"Key: {key} | Value: {eval_value}")
+                    counter3 += 1
             else:
                 betweens += 1
             
@@ -149,6 +163,7 @@ class CLI:
         return ones, zeros, betweens
     
     def validate(self, args):
+        """Get data from the database for validation."""
         db_path = "scoreboards"
         scoreboard_file = "scoreboards/data.mdb"
         if not os.path.isfile(scoreboard_file):
@@ -180,11 +195,8 @@ class CLI:
         used = total_mb - available_mb
         print(f"Total space: {total_mb:.2f} MB, Available: {available_mb:.2f} MB, Used: {used:.2f} MB")
 
-    
-        
-    
-    
     def welcome_text(self):
+        """Display welcome text."""
         text = """
            _____ _                     ______             _            
           / ____| |                   |  ____|           (_)           

@@ -18,12 +18,12 @@ class GameSaver:
         and updates the evaluation data in the batch or database.
         """
         positions = game["positions"]
-        relevant_positions = positions[1::2]
+        relevant_positions = positions[2::2]
         relevant_positions.reverse()
         evaluations = []
 
         # Assign initial evaluation based on the game result
-        if game["result"] == game_results.white:
+        if game["result"] == game_results.black:
             evaluations.append((relevant_positions[0], 1))
         elif game["result"] == game_results.black:
             return
@@ -40,8 +40,8 @@ class GameSaver:
             if fen in self.batch_data:
                 prev_eval, count = self.batch_data[fen]
             else:
-                # prev_eval, count = self.db.get_or_default(fen, (0.0, 0))
-                prev_eval, count = 0.0, 0
+                prev_eval, count = self.db.get_or_default(fen, (0.0, 0))
+                # prev_eval, count = 0.0, 0
 
             # Update evaluation
             new_eval = (prev_eval * count + eval_value) / (count + 1)
