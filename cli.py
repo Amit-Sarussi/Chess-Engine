@@ -128,8 +128,6 @@ class CLI:
         from LMDB import LMDBWrapper
         db = LMDBWrapper(db_path)
         cursor = db.env.begin().cursor()
-        counter = 0
-        counter3 = 0
         
         ones = zeros = betweens = 0
 
@@ -146,16 +144,10 @@ class CLI:
 
             if eval_value == 1.0:
                 ones += 1
-                if start_idx == 0 and counter < 2:
-                    print(f"Key: {key} | Value: {eval_value}")
-                    counter += 1
             elif eval_value == 0.0:
                 zeros += 1
             elif eval_value == 0.98:
                 betweens += 1
-                if start_idx == 0 and counter3 < 3:
-                    print(f"Key: {key} | Value: {eval_value}")
-                    counter3 += 1
             else:
                 betweens += 1
             
