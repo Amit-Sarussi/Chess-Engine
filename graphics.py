@@ -403,11 +403,14 @@ class Graphics:
                     promotion = 0
                         
                     # Capture
-                    capture = self.board.occupancies[color.black] & (1 << self.to_square) != 0
+                    capture = self.board.occupancies[color.black] & (1 << self.to_square) != 0 # Normal Capture
+                    # Special case of en passant capture
+                    if self.holden_piece == piece.P and (self.from_square - self.to_square) in (-7, -9) and self.board.en_passant == self.to_square:
+                        capture = True
                     # Double push
                     double_push = self.holden_piece == piece.P and (self.from_square - self.to_square) in (16, -16)
                     # En passant
-                    enpassant = self.holden_piece == piece.P and (self.from_square - self.to_square) in (7, -7) and self.board.en_passant == self.to_square
+                    enpassant = self.holden_piece == piece.P and (self.from_square - self.to_square) in (-7, -9) and self.board.en_passant == self.to_square
                     # Castling
                     castling = (self.holden_piece == piece.K and (self.from_square - self.to_square) in (2, -2))
                     
