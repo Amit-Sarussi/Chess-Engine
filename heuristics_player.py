@@ -18,7 +18,7 @@ class HeuristicsPlayer(Player):
     def __init__(self, board: Board, color: int = color.white) -> None:
         super().__init__(board, color)
 
-    def make_player_move(self):
+    def make_player_move(self) -> int | None:
         """
         Executes the best possible move for the player based on heuristic evaluations.
         This method generates all possible moves for the current board state, evaluates
@@ -34,22 +34,22 @@ class HeuristicsPlayer(Player):
         if len(move_evaluations) == 0:
             return None
         else:
-            self.board.make_move(move_evaluations[0][0], move_type.all_moves)
+            self.board.make_move(move_evaluations[0][0])
             return move_evaluations[0][0]
             
-    def evaluate_move(self, move):
+    def evaluate_move(self, move) -> int | None:
         """
         Evaluates the given move by simulating it on the board and calculating the resulting position's evaluation.
         """
         before = self.board.copy_board()
-        status = self.board.make_move(move, move_type.all_moves)
+        status = self.board.make_move(move)
         evaluation = None
         if status:
             evaluation = self.evaluate_position()
         self.board.restore_board(*before)
         return evaluation
             
-    def evaluate_position(self):
+    def evaluate_position(self) -> int:
         """
         Evaluates the current position on the chessboard and returns a score.
         The evaluation is based on the material balance of the pieces on the board,

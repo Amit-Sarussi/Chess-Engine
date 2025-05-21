@@ -3,7 +3,7 @@ from bit import *
 from attacks import *
 import random
 
-def generate_magic_number_candidate():
+def generate_magic_number_candidate() -> int:
     """Generate a random number to be used as a candidate for a magic number."""
     prime = 2147483647  # A good prime number
     return (random.getrandbits(64) * prime) & 0xFFFFFFFFFFFFFFFF

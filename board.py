@@ -1,3 +1,4 @@
+import bit
 from headers import *
 from bit import *
 from attacks import init_leapers_attacks, get_bishop_attacks, get_rook_attacks, get_queen_attacks
@@ -45,7 +46,7 @@ class Board:
                 
         print(f"  Castle: {castle_str}\n")
    
-    def copy_board(self):
+    def copy_board(self) -> tuple[list[int], list[int], int, int, int, int, int]:
         """Creates and returns a copy of the current board state."""
         bitboards_copy = self.bitboards.copy()
         occupancies_copy = self.occupancies.copy()
@@ -57,7 +58,7 @@ class Board:
         
         return (bitboards_copy, occupancies_copy, turn_copy, castle_copy, en_passant_copy, halfmove_copy, fullmove_copy)
     
-    def restore_board(self, bitboards_copy, occupancies_copy, turn_copy, castle_copy, en_passant_copy, halfmove_copy, fullmove_copy):
+    def restore_board(self, bitboards_copy, occupancies_copy, turn_copy, castle_copy, en_passant_copy, halfmove_copy, fullmove_copy) -> None:
         """Restores the board state from the provided copies of attributes."""
         self.bitboards = bitboards_copy.copy()
         self.occupancies = occupancies_copy.copy()
@@ -281,7 +282,7 @@ class Board:
         
         return False
     
-    def print_attacked_squares(self, color: int):
+    def print_attacked_squares(self, color: int) -> None:
         """Print all squares attacked by the current player."""
         bb = 0
         for square in range(64):
@@ -290,6 +291,217 @@ class Board:
         
         print_bitboard(bb)
 
+    def generate_pawn_moves(self, color: int) -> list[int]:
+        """Generate all pawn moves for the given color."""
+        if color == color.white:
+            pc = piece.P
+        else:
+            pc = piece.p
+        
+        bitboard = self.bitboards[pc]
+        
+        moves = []
+        while bitboard:
+            source_square = get_ls1b_index(bitboard)
+            if color == color.white:
+                target_square = source_square + 8
+            else:
+                target_square = source_square - 8
+            
+            # Quiet move
+            if not target_square < 0 and not get_bit(self.occupancies[color.both], target_square):
+                # Pawn promotion
+                if (target_square // 8 == 7 and color == color.white) or (target_square // 8 == 0 and color == color.black):
+                    moves.append(encode_move(source_square, target_square, pc, piece.Q, 0, 0, 0, 0))
+                    moves.append(encode_move(source_square, target_square, pc, piece.R, 0, 0, 0, 0))
+                    moves.append(encode_move(source_square, target_square, pc, piece.B, 0, 0, 0, 0))
+                    moves.append(encode_move(source_square, target_square, pc, piece.N, 0, 0, 0, 0))
+                else:
+                    # One square move
+                    moves.append(encode_move(source_square, target_square, pc, 0, 0, 0, 0, 0))
+                    # Two square move
+                    is_on_start = source_square // 8 == 1 if color == color.white else source_square // 8 == 6
+                    two_squares_target = target_square + 8 if color == color.white else target_square - 8
+                    if is_on_start and not get_bit(self.occupancies[color.both], two_squares_target):
+                        if color == color.white:
+                            moves.append(encode_move(source_square, target_square + 8, pc, 0, 0, 1, 0, 0))
+                        else:
+                            moves.append(encode_move(source_square, target_square - 8, pc, 0, 0, 1, 0, 0))
+            
+            # Pawn attacks
+            if color == color.white:
+                attacks = self.pawn_attacks[self.turn][source_square] & self.occupancies[color.black]
+            else:
+                attacks = self.pawn_attacks[self.turn][source_square] & self.occupancies[color.white]
+            while attacks:
+                target_square = get_ls1b_index(attacks)
+                
+                # Pawn promotion
+                if (target_square // 8 == 7 and color == color.white) or (target_square // 8 == 0 and color == color.black):
+                    moves.append(encode_move(source_square, target_square, pc, piece.Q, 1, 0, 0, 0))
+                    moves.append(encode_move(source_square, target_square, pc, piece.R, 1, 0, 0, 0))
+                    moves.append(encode_move(source_square, target_square, pc, piece.B, 1, 0, 0, 0))
+                    moves.append(encode_move(source_square, target_square, pc, piece.N, 1, 0, 0, 0))
+                else:
+                    moves.append(encode_move(source_square, target_square, pc, 0, 1, 0, 0, 0))                                
+                    
+                attacks = pop_bit(attacks, target_square)
+            
+            # En passant
+            if self.en_passant != square.no_sq:
+                # Check if the current pawn can capture the en passant square
+                enpassant_attacks = self.pawn_attacks[self.turn][source_square] & (1 << self.en_passant)
+                
+                if enpassant_attacks:
+                    moves.append(encode_move(source_square, self.en_passant, pc, 0, 1, 0, 1, 0))
+            
+            bitboard = pop_bit(bitboard, source_square)
+        
+        return moves
+    
+    def generate_castling_moves(self, color: int) -> list[int]:
+        moves = []
+        
+        if color == color.white:
+            pc = piece.K
+            if self.castle & castle.wk:
+                # Make sure that square between king and rook are empty
+                if not get_bit(self.occupancies[color.both], square.f1) and not get_bit(self.occupancies[color.both], square.g1):
+                    # Make sure king and the f1 squares are not attacked
+                    if not self.is_square_attacked(square.e1, color.black) and not self.is_square_attacked(square.f1, color.black):
+                        moves.append(encode_move(square.e1, square.g1, pc, 0, 0, 0, 0, 1))
+            if self.castle & castle.wq:
+                # Make sure that square between king and rook are empty
+                if not get_bit(self.occupancies[color.both], square.b1) and not get_bit(self.occupancies[color.both], square.c1) and not get_bit(self.occupancies[color.both], square.d1):
+                    # Make sure king and the d1, c1 squares are not attacked
+                    if not self.is_square_attacked(square.e1, color.black) and not self.is_square_attacked(square.d1, color.black):
+                        moves.append(encode_move(square.e1, square.c1, pc, 0, 0, 0, 0, 1))
+        else:
+            pc = piece.k
+            if self.castle & castle.bk:
+                # Make sure that square between king and rook are empty
+                if not get_bit(self.occupancies[color.both], square.f8) and not get_bit(self.occupancies[color.both], square.g8):
+                    # Make sure king and the f1 squares are not attacked
+                    if not self.is_square_attacked(square.e8, color.white) and not self.is_square_attacked(square.f8, color.white):
+                        moves.append(encode_move(square.e8, square.g8, pc, 0, 0, 0, 0, 1))
+            if self.castle & castle.bq:
+                # Make sure that square between king and rook are empty
+                if not get_bit(self.occupancies[color.both], square.b8) and not get_bit(self.occupancies[color.both], square.c8) and not get_bit(self.occupancies[color.both], square.d8):
+                    # Make sure king and the d1, c1 squares are not attacked
+                    if not self.is_square_attacked(square.e8, color.white) and not self.is_square_attacked(square.d8, color.white):
+                        moves.append(encode_move(square.e8, square.c8, pc, 0, 0, 0, 0, 1))
+        
+        return moves
+
+    def generate_knight_moves(self, pc: int) -> list[int]:
+        moves = []
+        bitboard = self.bitboards[pc]
+        if (self.turn == color.white and pc == piece.N) or (self.turn == color.black and pc == piece.n):
+            while bitboard:
+                source_square = get_ls1b_index(bitboard)
+                attacks = self.knight_attacks[source_square] & ~self.occupancies[self.turn]
+                while attacks:
+                    target_square = get_ls1b_index(attacks)
+                    
+                    # Quiet move
+                    if not get_bit(self.occupancies[color.both], target_square):
+                        moves.append(encode_move(source_square, target_square, pc, 0, 0, 0, 0, 0))
+                    else:
+                        moves.append(encode_move(source_square, target_square, pc, 0, 1, 0, 0, 0))                           
+                    attacks = pop_bit(attacks, target_square)
+                bitboard = pop_bit(bitboard, source_square)
+        
+        return moves
+    
+    def generate_bishop_moves(self, pc: int) -> list[int]:
+        moves = []
+        bitboard = self.bitboards[pc]
+        if (self.turn == color.white and pc == piece.B) or (self.turn == color.black and pc == piece.b):
+            while bitboard:
+                source_square = get_ls1b_index(bitboard)
+                attacks = get_bishop_attacks(source_square, self.occupancies[color.both]) & ~self.occupancies[self.turn]
+                while attacks:
+                    target_square = get_ls1b_index(attacks)
+                    
+                    # Quiet move
+                    if not get_bit(self.occupancies[color.both], target_square):
+                        moves.append(encode_move(source_square, target_square, pc, 0, 0, 0, 0, 0))  
+                    # Attack
+                    else:
+                        moves.append(encode_move(source_square, target_square, pc, 0, 1, 0, 0, 0)) 
+                    
+                    attacks = pop_bit(attacks, target_square)
+                bitboard = pop_bit(bitboard, source_square)
+        
+        return moves
+    
+    def generate_rook_moves(self, pc: int) -> list[int]:
+        moves = []
+        bitboard = self.bitboards[pc]
+        if (self.turn == color.white and pc == piece.R) or (self.turn == color.black and pc == piece.r):
+            while bitboard:
+                source_square = get_ls1b_index(bitboard)
+                attacks = get_rook_attacks(source_square, self.occupancies[color.both]) & ~self.occupancies[self.turn]
+                while attacks:
+                    target_square = get_ls1b_index(attacks)
+                    
+                    # Quiet move
+                    if not get_bit(self.occupancies[color.both], target_square):
+                        moves.append(encode_move(source_square, target_square, pc, 0, 0, 0, 0, 0))  
+                    # Attack
+                    else:
+                        moves.append(encode_move(source_square, target_square, pc, 0, 1, 0, 0, 0)) 
+                    
+                    attacks = pop_bit(attacks, target_square)
+                bitboard = pop_bit(bitboard, source_square)
+        
+        return moves
+    
+    def generate_queen_moves(self, pc: int) -> list[int]:
+        moves = []
+        bitboard = self.bitboards[pc]
+        if (self.turn == color.white and pc == piece.Q) or (self.turn == color.black and pc == piece.q):
+            while bitboard:
+                source_square = get_ls1b_index(bitboard)
+                attacks = get_queen_attacks(source_square, self.occupancies[color.both]) & ~self.occupancies[self.turn]
+                while attacks:
+                    target_square = get_ls1b_index(attacks)
+                    
+                    # Quiet move
+                    if not get_bit(self.occupancies[color.both], target_square):
+                        moves.append(encode_move(source_square, target_square, pc, 0, 0, 0, 0, 0))  
+                    # Attack
+                    else:
+                        moves.append(encode_move(source_square, target_square, pc, 0, 1, 0, 0, 0)) 
+                    
+                    attacks = pop_bit(attacks, target_square)
+                bitboard = pop_bit(bitboard, source_square)
+        
+        return moves
+    
+    def generate_king_moves(self, pc: int) -> list[int]:
+        moves = []
+        bitboard = self.bitboards[pc]
+        if (self.turn == color.white and pc == piece.K) or (self.turn == color.black and pc == piece.k):
+            while bitboard:
+                source_square = get_ls1b_index(bitboard)
+                attacks = self.king_attacks[source_square] & ~self.occupancies[self.turn]
+                
+                while attacks:
+                    target_square = get_ls1b_index(attacks)
+                    
+                    # Quiet move
+                    if not get_bit(self.occupancies[color.both], target_square):
+                        moves.append(encode_move(source_square, target_square, pc, 0, 0, 0, 0, 0))  
+                                                    
+                    # Attack
+                    else:
+                        moves.append(encode_move(source_square, target_square, pc, 0, 1, 0, 0, 0)) 
+                    
+                    attacks = pop_bit(attacks, target_square)
+                bitboard = pop_bit(bitboard, source_square)
+        return moves
+    
     def generate_moves(self) -> list[int]:
         """Generate all moves for the current player."""
         moves = []
@@ -299,333 +511,139 @@ class Board:
             
             # Generate white pawns and white king castling moves
             if self.turn == color.white:
+                # Generate white pawns moves
                 if pc == piece.P:
-                    # Look over white pawns within white pawn bitboard
-                    while bitboard:
-                        source_square = get_ls1b_index(bitboard)
-                        target_square = source_square + 8
-                        
-                        # Quiet move
-                        if not target_square < 0 and not get_bit(self.occupancies[color.both], target_square):
-                            # Pawn promotion
-                            if target_square // 8 == 7:
-                                moves.append(encode_move(source_square, target_square, pc, piece.Q, 0, 0, 0, 0))
-                                moves.append(encode_move(source_square, target_square, pc, piece.R, 0, 0, 0, 0))
-                                moves.append(encode_move(source_square, target_square, pc, piece.B, 0, 0, 0, 0))
-                                moves.append(encode_move(source_square, target_square, pc, piece.N, 0, 0, 0, 0))
-                            else:
-                                # One square move
-                                moves.append(encode_move(source_square, target_square, pc, 0, 0, 0, 0, 0))
-                                # Two square move
-                                if source_square // 8 == 1 and not get_bit(self.occupancies[color.both], target_square + 8):
-                                    moves.append(encode_move(source_square, target_square + 8, pc, 0, 0, 1, 0, 0))
-                        
-                        # Pawn attacks
-                        attacks = self.pawn_attacks[self.turn][source_square] & self.occupancies[color.black]
-                        while attacks:
-                            target_square = get_ls1b_index(attacks)
-                            
-                            # Pawn promotion
-                            if target_square // 8 == 7:
-                                moves.append(encode_move(source_square, target_square, pc, piece.Q, 1, 0, 0, 0))
-                                moves.append(encode_move(source_square, target_square, pc, piece.R, 1, 0, 0, 0))
-                                moves.append(encode_move(source_square, target_square, pc, piece.B, 1, 0, 0, 0))
-                                moves.append(encode_move(source_square, target_square, pc, piece.N, 1, 0, 0, 0))
-                            else:
-                                moves.append(encode_move(source_square, target_square, pc, 0, 1, 0, 0, 0))                                
-                                
-                            attacks = pop_bit(attacks, target_square)
-                        
-                        # En passant
-                        if self.en_passant != square.no_sq:
-                            # Check if the current pawn can capture the en passant square
-                            enpassant_attacks = self.pawn_attacks[self.turn][source_square] & (1 << self.en_passant)
-                            
-                            if enpassant_attacks:
-                                moves.append(encode_move(source_square, self.en_passant, pc, 0, 1, 0, 1, 0))
-                        
-                        bitboard = pop_bit(bitboard, source_square)
-                        
-                # Generate white king castling moves
+                    moves += self.generate_pawn_moves(color.white)
                 elif pc == piece.K:
-                    if self.castle & castle.wk:
-                        # Make sure that square between king and rook are empty
-                        if not get_bit(self.occupancies[color.both], square.f1) and not get_bit(self.occupancies[color.both], square.g1):
-                            # Make sure king and the f1 squares are not attacked
-                            if not self.is_square_attacked(square.e1, color.black) and not self.is_square_attacked(square.f1, color.black):
-                                moves.append(encode_move(square.e1, square.g1, pc, 0, 0, 0, 0, 1))
-                    if self.castle & castle.wq:
-                        # Make sure that square between king and rook are empty
-                        if not get_bit(self.occupancies[color.both], square.b1) and not get_bit(self.occupancies[color.both], square.c1) and not get_bit(self.occupancies[color.both], square.d1):
-                            # Make sure king and the d1, c1 squares are not attacked
-                            if not self.is_square_attacked(square.e1, color.black) and not self.is_square_attacked(square.d1, color.black):
-                                moves.append(encode_move(square.e1, square.c1, pc, 0, 0, 0, 0, 1))
-                            
+                    moves += self.generate_castling_moves(color.white)
             # Generate black pawns and black king castling moves
             else:
                 if pc == piece.p:
-                    # Look over black pawns within black pawn bitboard
-                    while bitboard:
-                        source_square = get_ls1b_index(bitboard)
-                        target_square = source_square - 8
-                        
-                        # Quiet move
-                        if not target_square < 0 and not get_bit(self.occupancies[color.both], target_square):
-                            # Pawn promotion
-                            if target_square // 8 == 0:
-                                moves.append(encode_move(source_square, target_square, pc, piece.q, 0, 0, 0, 0))
-                                moves.append(encode_move(source_square, target_square, pc, piece.r, 0, 0, 0, 0))
-                                moves.append(encode_move(source_square, target_square, pc, piece.b, 0, 0, 0, 0))
-                                moves.append(encode_move(source_square, target_square, pc, piece.n, 0, 0, 0, 0))
-                            else:
-                                # One square move
-                                moves.append(encode_move(source_square, target_square, pc, 0, 0, 0, 0, 0))
-                                # Two square move
-                                if source_square // 8 == 6 and not get_bit(self.occupancies[color.both], target_square - 8):
-                                    moves.append(encode_move(source_square, target_square - 8, pc, 0, 0, 1, 0, 0))
-
-                        # Pawn attacks
-                        attacks = self.pawn_attacks[self.turn][source_square] & self.occupancies[color.white]
-                        while attacks:
-                            target_square = get_ls1b_index(attacks)
-                            
-                            # Pawn promotion
-                            if target_square // 8 == 0:
-                                moves.append(encode_move(source_square, target_square, pc, piece.q, 1, 0, 0, 0))
-                                moves.append(encode_move(source_square, target_square, pc, piece.r, 1, 0, 0, 0))
-                                moves.append(encode_move(source_square, target_square, pc, piece.b, 1, 0, 0, 0))
-                                moves.append(encode_move(source_square, target_square, pc, piece.n, 1, 0, 0, 0))
-                            else:
-                                moves.append(encode_move(source_square, target_square, pc, 0, 1, 0, 0, 0))                                
-                                
-                                
-                            attacks = pop_bit(attacks, target_square)
-                        
-                        # En passant
-                        if self.en_passant != square.no_sq:
-                            # Check if the current pawn can capture the en passant square
-                            enpassant_attacks = self.pawn_attacks[self.turn][source_square] & (1 << self.en_passant)
-                            
-                            if enpassant_attacks:
-                                moves.append(encode_move(source_square, self.en_passant, pc, 0, 1, 0, 1, 0))
-                                
-                        bitboard = pop_bit(bitboard, source_square)
-                        
-                # Generate black king castling moves
+                    moves += self.generate_pawn_moves(color.black)
                 elif pc == piece.k:
-                    if self.castle & castle.bk:
-                        # Make sure that square between king and rook are empty
-                        if not get_bit(self.occupancies[color.both], square.f8) and not get_bit(self.occupancies[color.both], square.g8):
-                            # Make sure king and the f1 squares are not attacked
-                            if not self.is_square_attacked(square.e8, color.white) and not self.is_square_attacked(square.f8, color.white):
-                                moves.append(encode_move(square.e8, square.g8, pc, 0, 0, 0, 0, 1))
-                    if self.castle & castle.bq:
-                        # Make sure that square between king and rook are empty
-                        if not get_bit(self.occupancies[color.both], square.b8) and not get_bit(self.occupancies[color.both], square.c8) and not get_bit(self.occupancies[color.both], square.d8):
-                            # Make sure king and the d1, c1 squares are not attacked
-                            if not self.is_square_attacked(square.e8, color.white) and not self.is_square_attacked(square.d8, color.white):
-                                moves.append(encode_move(square.e8, square.c8, pc, 0, 0, 0, 0, 1))
+                    moves += self.generate_castling_moves(color.black)
             
             # Generate knight moves
-            if (self.turn == color.white and pc == piece.N) or (self.turn == color.black and pc == piece.n):
-                while bitboard:
-                    source_square = get_ls1b_index(bitboard)
-                    attacks = self.knight_attacks[source_square] & ~self.occupancies[self.turn]
-                    while attacks:
-                        target_square = get_ls1b_index(attacks)
-                        
-                        # Quiet move
-                        if not get_bit(self.occupancies[color.both], target_square):
-                            moves.append(encode_move(source_square, target_square, pc, 0, 0, 0, 0, 0))                        # Attack
-                        else:
-                            moves.append(encode_move(source_square, target_square, pc, 0, 1, 0, 0, 0))                           
-                        attacks = pop_bit(attacks, target_square)
-                    bitboard = pop_bit(bitboard, source_square)
+            moves += self.generate_knight_moves(pc)
             
             # Generate bishop moves
-            if (self.turn == color.white and pc == piece.B) or (self.turn == color.black and pc == piece.b):
-                while bitboard:
-                    source_square = get_ls1b_index(bitboard)
-                    attacks = get_bishop_attacks(source_square, self.occupancies[color.both]) & ~self.occupancies[self.turn]
-                    while attacks:
-                        target_square = get_ls1b_index(attacks)
-                        
-                        # Quiet move
-                        if not get_bit(self.occupancies[color.both], target_square):
-                            moves.append(encode_move(source_square, target_square, pc, 0, 0, 0, 0, 0))  
-                        # Attack
-                        else:
-                            moves.append(encode_move(source_square, target_square, pc, 0, 1, 0, 0, 0)) 
-                        
-                        attacks = pop_bit(attacks, target_square)
-                    bitboard = pop_bit(bitboard, source_square)
+            moves += self.generate_bishop_moves(pc)
             
             # Generate rook moves
-            if (self.turn == color.white and pc == piece.R) or (self.turn == color.black and pc == piece.r):
-                while bitboard:
-                    source_square = get_ls1b_index(bitboard)
-                    attacks = get_rook_attacks(source_square, self.occupancies[color.both]) & ~self.occupancies[self.turn]
-                    while attacks:
-                        target_square = get_ls1b_index(attacks)
-                        
-                        # Quiet move
-                        if not get_bit(self.occupancies[color.both], target_square):
-                            moves.append(encode_move(source_square, target_square, pc, 0, 0, 0, 0, 0))  
-                        # Attack
-                        else:
-                            moves.append(encode_move(source_square, target_square, pc, 0, 1, 0, 0, 0)) 
-                        
-                        attacks = pop_bit(attacks, target_square)
-                    bitboard = pop_bit(bitboard, source_square)
+            moves += self.generate_rook_moves(pc)
                     
             # Generate queen moves
-            if (self.turn == color.white and pc == piece.Q) or (self.turn == color.black and pc == piece.q):
-                while bitboard:
-                    source_square = get_ls1b_index(bitboard)
-                    attacks = get_queen_attacks(source_square, self.occupancies[color.both]) & ~self.occupancies[self.turn]
-                    while attacks:
-                        target_square = get_ls1b_index(attacks)
-                        
-                        # Quiet move
-                        if not get_bit(self.occupancies[color.both], target_square):
-                            moves.append(encode_move(source_square, target_square, pc, 0, 0, 0, 0, 0))  
-                        # Attack
-                        else:
-                            moves.append(encode_move(source_square, target_square, pc, 0, 1, 0, 0, 0)) 
-                        
-                        attacks = pop_bit(attacks, target_square)
-                    bitboard = pop_bit(bitboard, source_square)
+            moves += self.generate_queen_moves(pc)
             
             # Generate king moves
-            if (self.turn == color.white and pc == piece.K) or (self.turn == color.black and pc == piece.k):
-                while bitboard:
-                    source_square = get_ls1b_index(bitboard)
-                    attacks = self.king_attacks[source_square] & ~self.occupancies[self.turn]
-                    
-                    while attacks:
-                        target_square = get_ls1b_index(attacks)
-                        
-                        # Quiet move
-                        if not get_bit(self.occupancies[color.both], target_square):
-                            moves.append(encode_move(source_square, target_square, pc, 0, 0, 0, 0, 0))  
-                                                        
-                        # Attack
-                        else:
-                            moves.append(encode_move(source_square, target_square, pc, 0, 1, 0, 0, 0)) 
-                        
-                        attacks = pop_bit(attacks, target_square)
-                    bitboard = pop_bit(bitboard, source_square)
+            moves += self.generate_king_moves(pc)
         
         return moves
                 
-    def make_move(self, move: int, move_flag: int):
-        """Make a move on the board."""
-        if move_flag == move_type.all_moves:
-            # Preserve board state
-            state = self.copy_board()
-            
-            # Parse move
-            source_square = get_move_source(move)
-            target_square = get_move_target(move)
-            m_piece = get_move_piece(move)
-            promoted = get_move_promoted(move)
-            capture = get_move_capture(move)
-            double_push = get_move_double_push(move)
-            enpassant = get_move_enpassant(move)
-            castling = get_move_castling(move)
-            
-            # Move piece
-            self.bitboards[m_piece] = pop_bit(self.bitboards[m_piece], source_square)
-            self.bitboards[m_piece] = set_bit(self.bitboards[m_piece], target_square)
-            
-            # Handle capture moves
-            if capture:
-                # Loop over bitboards opposite to current turn
-                opposite_range = range(6) if self.turn == color.black else range(6, 12)
-                for pce in opposite_range:
-                    if get_bit(self.bitboards[pce], target_square):
-                        self.bitboards[pce] = pop_bit(self.bitboards[pce], target_square)
-                        break
-            
-            # Handle promotion moves
-            if promoted:
-                self.bitboards[m_piece] = pop_bit(self.bitboards[m_piece], target_square)
-                self.bitboards[promoted] = set_bit(self.bitboards[promoted], target_square)
-            
-            # Handle en passant captures
-            if enpassant:
-                if self.turn == color.white:
-                    self.bitboards[piece.p] = pop_bit(self.bitboards[piece.p], target_square - 8)
-                else:
-                    self.bitboards[piece.P] = pop_bit(self.bitboards[piece.P], target_square + 8)
-
-            # Reset en passant square
-            self.en_passant = square.no_sq
-            
-            # Handle double push
-            if double_push:
-                if self.turn == color.white:
-                    self.en_passant = target_square - 8
-                else:
-                    self.en_passant = target_square + 8
-            
-            # Handle castling
-            if castling:
-                match target_square:
-                    case square.g1:
-                        self.bitboards[piece.R] = pop_bit(self.bitboards[piece.R], square.h1)
-                        self.bitboards[piece.R] = set_bit(self.bitboards[piece.R], square.f1)
-                    case square.c1:
-                        self.bitboards[piece.R] = pop_bit(self.bitboards[piece.R], square.a1)
-                        self.bitboards[piece.R] = set_bit(self.bitboards[piece.R], square.d1)
-                    case square.g8:
-                        self.bitboards[piece.r] = pop_bit(self.bitboards[piece.r], square.h8)
-                        self.bitboards[piece.r] = set_bit(self.bitboards[piece.r], square.f8)
-                    case square.c8:
-                        self.bitboards[piece.r] = pop_bit(self.bitboards[piece.r], square.a8)
-                        self.bitboards[piece.r] = set_bit(self.bitboards[piece.r], square.d8)
-
-            # Update castling rights
-            self.castle &= castling_rights[source_square]
-            self.castle &= castling_rights[target_square]
-            
-            # Update occupancies
-            self.occupancies[color.white] = self.bitboards[piece.P] | self.bitboards[piece.N] | self.bitboards[piece.B] | self.bitboards[piece.Q] | self.bitboards[piece.K] | self.bitboards[piece.R]
-            self.occupancies[color.black] = self.bitboards[piece.p] | self.bitboards[piece.n] | self.bitboards[piece.b] | self.bitboards[piece.q] | self.bitboards[piece.k] | self.bitboards[piece.r]
-            self.occupancies[color.both] = self.occupancies[color.white] | self.occupancies[color.black]
-            
-           
-            # Update halfmove clock
-            self.halfmove += 1
-            if capture or m_piece == piece.p or m_piece == piece.P:
-                self.halfmove = 0
-                
-            # Update fullmove clock
-            if self.turn == color.black:
-                self.fullmove += 1
-            
-            # Switch turn
-            self.turn ^= 1
-            
-            # Make sure that king is not in check
-            king_square = get_ls1b_index(self.bitboards[piece.k] if self.turn == color.white else self.bitboards[piece.K])
-            if self.is_square_attacked(king_square, self.turn):
-                # Move is illegal, take it back.
-                self.restore_board(*state)
-                return 0
-                
+    def make_move(self, move: int) -> bool:
+        """
+        Executes a move on the chess board, updating the board state accordingly.
+        This method handles all aspects of move execution, including piece movement, captures,
+        promotions, en passant, castling, updating castling rights, en passant squares, and move clocks.
+        It also ensures that the move does not leave the player's king in check; if it does, the move is reverted.
+        """
+        # Preserve board state
+        state = self.copy_board()
+        
+        # Parse move
+        source_square = get_move_source(move)
+        target_square = get_move_target(move)
+        m_piece = get_move_piece(move)
+        promoted = get_move_promoted(move)
+        capture = get_move_capture(move)
+        double_push = get_move_double_push(move)
+        enpassant = get_move_enpassant(move)
+        castling = get_move_castling(move)
+        
+        # Move piece
+        self.bitboards[m_piece] = pop_bit(self.bitboards[m_piece], source_square)
+        self.bitboards[m_piece] = set_bit(self.bitboards[m_piece], target_square)
+        
+        # Handle capture moves
+        if capture:
+            # Loop over bitboards opposite to current turn
+            opposite_range = range(6) if self.turn == color.black else range(6, 12)
+            for pce in opposite_range:
+                if get_bit(self.bitboards[pce], target_square):
+                    self.bitboards[pce] = pop_bit(self.bitboards[pce], target_square)
+                    break
+        
+        # Handle promotion moves
+        if promoted:
+            self.bitboards[m_piece] = pop_bit(self.bitboards[m_piece], target_square)
+            self.bitboards[promoted] = set_bit(self.bitboards[promoted], target_square)
+        
+        # Handle en passant captures
+        if enpassant:
+            if self.turn == color.white:
+                self.bitboards[piece.p] = pop_bit(self.bitboards[piece.p], target_square - 8)
             else:
-                return 1
+                self.bitboards[piece.P] = pop_bit(self.bitboards[piece.P], target_square + 8)
+
+        # Reset en passant square
+        self.en_passant = square.no_sq
+        
+        # Handle double push
+        if double_push:
+            if self.turn == color.white:
+                self.en_passant = target_square - 8
+            else:
+                self.en_passant = target_square + 8
+        
+        # Handle castling
+        if castling:
+            match target_square:
+                case square.g1:
+                    self.bitboards[piece.R] = pop_bit(self.bitboards[piece.R], square.h1)
+                    self.bitboards[piece.R] = set_bit(self.bitboards[piece.R], square.f1)
+                case square.c1:
+                    self.bitboards[piece.R] = pop_bit(self.bitboards[piece.R], square.a1)
+                    self.bitboards[piece.R] = set_bit(self.bitboards[piece.R], square.d1)
+                case square.g8:
+                    self.bitboards[piece.r] = pop_bit(self.bitboards[piece.r], square.h8)
+                    self.bitboards[piece.r] = set_bit(self.bitboards[piece.r], square.f8)
+                case square.c8:
+                    self.bitboards[piece.r] = pop_bit(self.bitboards[piece.r], square.a8)
+                    self.bitboards[piece.r] = set_bit(self.bitboards[piece.r], square.d8)
+
+        # Update castling rights
+        self.castle &= castling_rights[source_square]
+        self.castle &= castling_rights[target_square]
+        
+        # Update occupancies
+        self.occupancies[color.white] = self.bitboards[piece.P] | self.bitboards[piece.N] | self.bitboards[piece.B] | self.bitboards[piece.Q] | self.bitboards[piece.K] | self.bitboards[piece.R]
+        self.occupancies[color.black] = self.bitboards[piece.p] | self.bitboards[piece.n] | self.bitboards[piece.b] | self.bitboards[piece.q] | self.bitboards[piece.k] | self.bitboards[piece.r]
+        self.occupancies[color.both] = self.occupancies[color.white] | self.occupancies[color.black]
+        
+        
+        # Update halfmove clock
+        self.halfmove += 1
+        if capture or m_piece == piece.p or m_piece == piece.P:
+            self.halfmove = 0
             
-        # Capture move
+        # Update fullmove clock
+        if self.turn == color.black:
+            self.fullmove += 1
+        
+        # Switch turn
+        self.turn ^= 1
+        
+        # Make sure that king is not in check
+        king_square = get_ls1b_index(self.bitboards[piece.k] if self.turn == color.white else self.bitboards[piece.K])
+        if self.is_square_attacked(king_square, self.turn):
+            # Move is illegal, take it back.
+            self.restore_board(*state)
+            return 0
+            
         else:
-            if get_move_capture(move):
-                self.make_move(move, move_type.all_moves)
-            else:
-                # Dont make the move
-                return 0
+            return 1
             
-    def is_king_in_check(self, king_color):
+    def is_king_in_check(self, king_color) -> bool:
         """Check if the king of the given color is in check."""
         # get the king square
         king_square = get_ls1b_index(self.bitboards[piece.K if king_color == color.white else piece.k])

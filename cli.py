@@ -1,10 +1,17 @@
+print("Engine is loading up...")
+
 import os
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0" # Disable tensorflow messages
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3" # Suppress TensorFlow warnings
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1" # Suppress pygame welcome message
+import absl.logging
+absl.logging.set_verbosity(absl.logging.ERROR) # disable tensorflow messages
 from LMDB import LMDBWrapper
 from board import Board
 from controller import Controller
 from headers import *
 from perft import perft_test
-from playerSelect import PlayerSelect
+from player_select import PlayerSelect
 from tournament import Tournament
 import shlex
 import multiprocessing
@@ -16,35 +23,42 @@ class CLI:
         self.is_running = True
         self.start()
     
-    def start(self):
+    def start(self) -> None:
         """Main loop for the CLI."""
         self.welcome_text()
         print("Type 'help' for a list of commands.")
         while self.is_running:
             self.process_input()
     
-    def process_input(self):
+    def process_input(self) -> None:
         """Process user input."""
         command = input("> ")
-        args = shlex.split(command)
-        match args[0]:
-            case "help":
-                self.help()
-            case "exit":
-                self.end()
-            case "simulate":
-                self.simulate(args)
-            case "play":
-                self.play(args)
-            case "validate":
-                self.validate(args)
-            case "perft":
-                self.perft(args)
-            case _:
-                print(f"'{args[0]}' is not a recognized command.")
+        try:
+            args = shlex.split(command)
+        except ValueError:
+            print("Invalid args. Please try again.")
+            return
+        try:
+            match args[0]:
+                case "help":
+                    self.help()
+                case "exit":
+                    self.end()
+                case "simulate":
+                    self.simulate(args)
+                case "play":
+                    self.play()
+                case "validate":
+                    self.validate(args)
+                case "perft":
+                    self.perft(args)
+                case _:
+                    print(f"'{args[0]}' is not a recognized command.")
+        except:
+            print(f"Error processing command '{args[0]}'. Please try again.")
         print()
     
-    def help(self):
+    def help(self) -> None:
         """Display help information."""
         commands = [
             ("help", "Display this help message."),
@@ -57,19 +71,20 @@ class CLI:
         for command in commands:
             print(f"[{command[0]}] - {command[1]}")
             
-    def end(self):
+    def end(self) -> None:
         """Exit the program."""
         print("Exiting.")
         self.is_running = False
     
-    def play(self, args): # play
+    def play(self) -> None:
         """Start a new game."""
         # Open player select window
         player_select = PlayerSelect().select()
+        # Start the game against the selected player
         Controller(player_select).start()
 
     
-    def simulate(self, args): # simulate <num_games> <player_1_type> <player_2_type>
+    def simulate(self, args) -> None: # simulate <num_games> <player_1_type> <player_2_type>
         """Simulate a tournament between two players."""
         if len(args) != 4:
             print("Invalid number of arguments.")
@@ -102,7 +117,7 @@ class CLI:
         tournament.start()
         tournament.print_results()
         
-    def perft(self, args): # perft <fen> <depth>
+    def perft(self, args) -> None: # perft <fen> <depth>
         """Run a perft test."""
         if len(args) != 3:
             print("Invalid number of arguments.")
@@ -154,10 +169,13 @@ class CLI:
 
         return ones, zeros, betweens
     
-    def validate(self, args):
+    def validate(self, args) -> None:
         """Get data from the database for validation."""
-        db_path = "scoreboards"
-        scoreboard_file = "scoreboards/data.mdb"
+        if len(args) > 1:
+            db_path = args[1]
+        else:
+            db_path = "scoreboards"
+        scoreboard_file = os.path.join(db_path, "data.mdb")
         if not os.path.isfile(scoreboard_file):
             print(f"Invalid file: {scoreboard_file}")
             return
@@ -187,7 +205,7 @@ class CLI:
         used = total_mb - available_mb
         print(f"Total space: {total_mb:.2f} MB, Available: {available_mb:.2f} MB, Used: {used:.2f} MB")
 
-    def welcome_text(self):
+    def welcome_text(self) -> None:
         """Display welcome text."""
         text = """
            _____ _                     ______             _            

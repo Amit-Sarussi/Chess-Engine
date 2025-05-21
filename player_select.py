@@ -23,7 +23,7 @@ class PlayerSelect:
         icon = pygame.image.load("assets/icon.png")
         pygame.display.set_icon(icon)
     
-    def select(self):
+    def select(self) -> int:
         """
         Runs the player selection screen, handling events, drawing UI elements,
         and returning the selected player option.
@@ -48,25 +48,17 @@ class PlayerSelect:
                 if event.type == pygame.QUIT:
                     running = False
 
-            # Fill the background with white
             self.screen.fill((255, 255, 255))
-
-            # Draw titles
             self.draw_titles()
-            
-            # Draw buttons
             self.draw_buttons()
-            
-            # Draw Start
             self.draw_start()
 
-            # Flip the display
             pygame.display.flip()
 
         pygame.quit()
         return self.selected
     
-    def draw_titles(self):
+    def draw_titles(self) -> None:
         """
         Draws the main title and subtitle on the screen.
         """
@@ -88,7 +80,7 @@ class PlayerSelect:
         # Draw the subtitle on the screen
         self.screen.blit(subtitle_surface, subtitle_rect)
     
-    def draw_buttons(self):
+    def draw_buttons(self) -> None:
         """
         Draws the player selection buttons with hover and selection effects.
         """
@@ -137,7 +129,7 @@ class PlayerSelect:
             # Draw the subtitle on the screen
             self.screen.blit(subtitle_surface, subtitle_rect)
     
-    def check_hover_buttons(self, x, y):
+    def check_hover_buttons(self, x, y) -> None:
         """
         Checks if the mouse is hovering over any of the player selection buttons
         and updates the hover state.
@@ -153,7 +145,7 @@ class PlayerSelect:
         else:
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
             
-    def draw_start(self):
+    def draw_start(self) -> None:
         """
         Draws the "Start" button with hover effects.
         """
@@ -177,7 +169,7 @@ class PlayerSelect:
         
         self.screen.blit(button_surface, button_rect)
     
-    def check_hover_start(self, x , y):
+    def check_hover_start(self, x , y) -> None:
         """
         Checks if the mouse is hovering over the "Start" button and updates the hover state.
         """

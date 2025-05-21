@@ -43,10 +43,6 @@ char_pieces: Final = {
     'k': piece.k
 }
 
-class move_type(IntEnum):
-    all_moves = 0
-    only_captures = 1
-
 class slide_piece(IntEnum):
     bishop = 0
     rook = 1

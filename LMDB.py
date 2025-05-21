@@ -2,7 +2,9 @@ import random
 import lmdb
 import zlib  # For compressing FEN strings
 import numpy as np # For more efficient packing
-from typing import Optional, Tuple
+from typing import Generator, Optional, Tuple
+
+from sympy import Ge
 
 class LMDBWrapper:
     def __init__(self, db_path: str, map_size: int = 10 * 1024**3):
@@ -65,13 +67,13 @@ class LMDBWrapper:
         with self.env.begin(write=True) as txn:
             return txn.delete(self._encode_key(key))
 
-    def keys(self):
+    def keys(self) -> Generator[str, None, None]:
         """List all keys in the database."""
         with self.env.begin() as txn:
             with txn.cursor() as cursor:
                 return [self._decode_key(key_bytes) for key_bytes, _ in cursor]
 
-    def values(self):
+    def values(self) -> Generator[Tuple[float, int], None, None]:
         """Iterate over all values."""
         with self.env.begin() as txn:
             with txn.cursor() as cursor:
@@ -80,7 +82,7 @@ class LMDBWrapper:
                     value_array = np.frombuffer(value_bytes, dtype=dtype, count=1)
                     yield value_array[0]['eval'], value_array[0]['count']
 
-    def items(self):
+    def items(self) -> Generator[Tuple[str, Tuple[float, int]], None, None]:
         """Iterate over all key-value pairs."""
         with self.env.begin() as txn:
             with txn.cursor() as cursor:
@@ -106,7 +108,7 @@ class LMDBWrapper:
         with self.env.begin() as txn:
             return txn.stat()["entries"]
 
-    def close(self):
+    def close(self) -> None:
         """Close the database."""
         self.env.sync()
         self.env.close()

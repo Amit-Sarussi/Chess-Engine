@@ -16,7 +16,7 @@ def perft_driver(board: Board, depth: int) -> int:
     count = 0
     for move in moves:
         copy = board.copy_board()
-        if board.make_move(move, move_type.all_moves):
+        if board.make_move(move):
             count += perft_driver(board, depth - 1)
             board.restore_board(*copy)
 
@@ -36,7 +36,7 @@ def perft_test(starting_fen: str, depth: int) -> int:
     total = 0
     for move in moves:
         copy = board.copy_board()
-        if board.make_move(move, move_type.all_moves):
+        if board.make_move(move):
             count = perft_driver(board, depth - 1)
             print(f"{str_move(move)}: {count}")
             board.restore_board(*copy)

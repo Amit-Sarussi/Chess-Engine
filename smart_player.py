@@ -12,7 +12,7 @@ class SmartPlayer(Player):
         super().__init__(board, color)
         self.db = db
 
-    def make_player_move(self):
+    def make_player_move(self) -> int | None:
         """
         Executes the best possible move for the player based on pre-evaluated scores
         from a database or a default score. Returns the chosen move or None if no
@@ -26,7 +26,7 @@ class SmartPlayer(Player):
             # Get move's FEN:
             FEN = ""
             restore = self.board.copy_board()
-            result = self.board.make_move(move, move_type.all_moves)
+            result = self.board.make_move(move)
             
             if result:
                 FEN = self.board.to_scoreboard_array()
@@ -42,7 +42,7 @@ class SmartPlayer(Player):
         moves_with_evaluations.sort(key=lambda x: x[1], reverse=True)
         while len(moves_with_evaluations) != 0:
             move = moves_with_evaluations[0][0]
-            status = self.board.make_move(move, move_type.all_moves)
+            status = self.board.make_move(move)
             if status:
                 return move
             else:

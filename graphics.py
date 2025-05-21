@@ -7,7 +7,7 @@ from bit import get_ls1b_index
 
 from game import Game
 from headers import *
-from move import encode_move, get_move_source, get_move_target
+from move import encode_move, get_move_capture, get_move_source, get_move_target
 
 
 class Graphics:
@@ -35,7 +35,7 @@ class Graphics:
         pygame.display.set_icon(icon)
         self.loop()
     
-    def play_sound(self, sound_name):
+    def play_sound(self, sound_name) -> None:
         """
         Plays a sound effect based on the provided sound name.
         """
@@ -51,7 +51,7 @@ class Graphics:
             return
         sound.play()
         
-    def load_sprites(self):
+    def load_sprites(self) -> dict:
         """
         Loads and processes chess piece sprites for the game.
         """
@@ -62,7 +62,7 @@ class Graphics:
             sprites[i] = sprite
         return sprites
 
-    def loop(self):
+    def loop(self) -> None:
         """
         Main event loop for the chess engine's graphical interface.
         This method handles user input events, updates the game state, and renders
@@ -103,12 +103,13 @@ class Graphics:
                     
                 if event.type == pygame.QUIT:
                     running = False
-                
+            
             self.draw_squares()
             self.draw_coordinates()
             self.draw_pieces()
             
             if not self.is_spectating:
+                self.draw_move_indicators()
                 self.draw_holden_piece()
             
             if self.show_win_screen:
@@ -122,7 +123,7 @@ class Graphics:
         
         pygame.quit()
     
-    def draw_squares(self):
+    def draw_squares(self) -> None:
         """
         Draws the chessboard squares on the screen.
         This method iterates through an 8x8 grid representing the chessboard.
@@ -143,7 +144,7 @@ class Graphics:
                 
                 pygame.draw.rect(self.screen, color, (col * (WINDOW_SIZE // 8), row * (WINDOW_SIZE // 8), WINDOW_SIZE // 8, WINDOW_SIZE // 8))
     
-    def draw_coordinates(self):
+    def draw_coordinates(self) -> None:
         """
         Draws the chessboard coordinates (numbers and letters) on the screen.
         """
@@ -156,7 +157,7 @@ class Graphics:
             letter = self.font.render(chr(ord('a') + i), True, LIGHT_TILE if i % 2 == 0 else DARK_TILE)
             self.screen.blit(letter, ((i + 1) * (WINDOW_SIZE // 8) - letter.get_width() - 5, WINDOW_SIZE - 30))
             
-    def draw_pieces(self):
+    def draw_pieces(self) -> None:
         """
         Draws the chess pieces on the board.
         This method iterates through the bitboards representing the positions of 
@@ -179,7 +180,7 @@ class Graphics:
                 row = 7 - (index // 8)
                 self.screen.blit(sprite, (col * (WINDOW_SIZE // 8), row * (WINDOW_SIZE // 8)))  # Draw the sprite
 
-    def draw_promotion_mode(self):
+    def draw_promotion_mode(self) -> None:
         """
         Draws the promotion mode UI, allowing the player to select a piece for promotion.
         """
@@ -210,7 +211,7 @@ class Graphics:
         # Blit the main surface on top of the shadow
         self.screen.blit(surface, ((self.to_square % 8) * (WINDOW_SIZE // 8), 0))
         
-    def check_hover_square(self, x, y):
+    def check_hover_square(self, x, y) -> None:
         """
         Determines the chessboard square being hovered over based on the given 
         x and y pixel coordinates, and updates the `hovered_square` attribute.
@@ -219,7 +220,7 @@ class Graphics:
         row = 7 - (y // (WINDOW_SIZE // 8))
         self.hovered_square = max(min(col + row * 8, 63), 0)
     
-    def determine_cursor_shape(self):
+    def determine_cursor_shape(self) -> None:
         """
         Updates the cursor shape based on the hovered square on the chessboard.
 
@@ -233,7 +234,7 @@ class Graphics:
         else:
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
     
-    def check_promotion_hover_square(self, x, y):
+    def check_promotion_hover_square(self, x, y) -> None:
         """
         Determines the chessboard square being hovered over during promotion mode
         based on the given x and y pixel coordinates, and updates the `hovered_square` attribute.
@@ -254,7 +255,7 @@ class Graphics:
         else:
             self.promotion_hover = None
     
-    def determine_promotion_cursor_shape(self):
+    def determine_promotion_cursor_shape(self) -> None:
         """
         Updates the cursor shape based on the hovered square during promotion mode.
         """
@@ -266,7 +267,7 @@ class Graphics:
         else:
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
             
-    def draw_holden_piece(self):
+    def draw_holden_piece(self) -> None:
         """
         Draws the currently held chess piece sprite at the cursor's position.
         """
@@ -276,7 +277,39 @@ class Graphics:
             offset = (WINDOW_SIZE // 16)  # Half of the sprite size
             self.screen.blit(sprite, (x - offset, y - offset))  # Draw the sprite centered on the cursor
     
-    def draw_game_over(self):
+    def get_possible_moves(self, square) -> list:
+        """
+        Returns a list of possible moves for the piece at the given square.
+        """
+        moves = []
+        moves += self.board.generate_moves()
+        moves = [move for move in moves if get_move_source(move) == square]
+        return moves
+    
+    def draw_move_indicators(self) -> None:
+        """
+        Draws move indicators on the chessboard for the last moved piece.
+        """
+        if len(self.last_squares) == 1:
+            square = self.last_squares[0]
+            
+            moves = self.get_possible_moves(square)
+            for move in moves:
+                target_square = get_move_target(move)
+                col = target_square % 8
+                row = 7 - (target_square // 8)
+                center_x = col * (WINDOW_SIZE // 8) + (WINDOW_SIZE // 16)
+                center_y = row * (WINDOW_SIZE // 8) + (WINDOW_SIZE // 16)
+                radius = WINDOW_SIZE // 48
+
+                # Draw move indicators with semi-transparent circles
+                is_capture = get_move_capture(move)
+                color = (255, 0, 0, 128) if is_capture else (255, 255, 255, 128)
+                circle_surface = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+                pygame.draw.circle(circle_surface, color, (radius, radius), radius)
+                self.screen.blit(circle_surface, (center_x - radius, center_y - radius))
+    
+    def draw_game_over(self) -> None:
         """
         Draws a rectangle in the middle of the screen to indicate the game over state.
         """
@@ -310,7 +343,7 @@ class Graphics:
         close_text_rect = close_text.get_rect(center=(WINDOW_SIZE // 2, rect_y + rect_height // 2))
         self.screen.blit(close_text, close_text_rect)
     
-    def close_button_hover(self):
+    def close_button_hover(self) -> None:
         """
         Checks if the mouse is hovering over the close button in the game over screen.
         """
@@ -324,7 +357,7 @@ class Graphics:
         else:
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
     
-    def mouse_down(self):
+    def mouse_down(self) -> None:
         """
         Handles the mouse down event for the chessboard.
         """
@@ -332,7 +365,107 @@ class Graphics:
             self.holden_square = self.hovered_square
         self.last_squares = [self.holden_square]
     
-    def mouse_up(self):
+    def check_close_win_screen(self) -> None:
+        """Checks if the user clicked on the close button in the game over screen."""
+        # Check if the user clicked on the close button
+        x, y = self.cursor_position
+        rect_width = WINDOW_SIZE // 3.6 * 0.8
+        rect_height = 70
+        rect_x = (WINDOW_SIZE - rect_width) // 2
+        rect_y = (WINDOW_SIZE - WINDOW_SIZE // 5) // 2 + WINDOW_SIZE // 5 - rect_height - 20
+        if rect_x < x < rect_x + rect_width and rect_y < y < rect_y + rect_height:
+            self.show_win_screen = False
+    
+    def promote_select(self) -> None:
+        """
+        Handles the selection of a piece for promotion during the promotion mode.
+        This method is responsible for determining which piece the player has selected
+        for promotion and updating the game state accordingly.
+        """
+        # Get the promoted piece
+        if self.promotion_hover is not None:
+            promotion = self.promotion_hover
+        else:
+            # Cancel move
+            self.holden_square = None
+            self.holden_piece = None
+            self.promotion_mode = False
+            return
+        
+        # Capture
+        capture = self.board.occupancies[color.black] & (1 << self.to_square) != 0
+        # Double push
+        double_push = self.holden_piece == piece.P and (self.from_square - self.to_square) in (16, -16)
+        # En passant
+        enpassant = self.holden_piece == piece.P and (self.from_square - self.to_square) in (7, -7) and self.board.en_passant == self.to_square
+        # Castling
+        castling = (self.holden_piece == piece.K and (self.from_square - self.to_square) in (2, -2))
+        
+        # Encode the move
+        move = encode_move(self.from_square, self.to_square, piece.P, promotion, capture, double_push, enpassant, castling)
+        status, bots_move, game_state = self.controller.make_move(move)
+        if bots_move:
+            self.last_squares = [get_move_source(bots_move), get_move_target(bots_move)]
+        
+        if game_state != None:
+            self.is_spectating = True
+            self.show_win_screen = True
+                    
+        self.holden_square = None
+        self.holden_piece = None
+        self.promotion_mode = False
+    
+    def make_move(self) -> None:
+        """
+        Handles the logic for making a move in the chess game.
+        This method is responsible for checking the validity of the move, handling
+        special cases such as promotion, capture, double push, en passant, and castling,
+        and updating the game state accordingly. It also communicates with the game
+        controller to execute the move and check for game-ending conditions.
+        """
+        self.last_squares = [self.holden_square]
+        if self.holden_square is not None:
+            self.from_square = self.holden_square
+            self.to_square = self.hovered_square
+            
+            if self.from_square != self.to_square:
+                # Get data about the move
+                # Promotion
+                if self.promotion_mode == False:
+                    if self.holden_piece == piece.P and (self.to_square // 8) == 7 and (self.from_square // 8) == 6:
+                        self.promotion_mode = True
+                        self.holden_square = None
+                        self.holden_piece = None
+                        return
+                
+                promotion = 0
+                    
+                # Capture
+                capture = self.board.occupancies[color.black] & (1 << self.to_square) != 0 # Normal Capture
+                # Special case of en passant capture
+                if self.holden_piece == piece.P and (self.from_square - self.to_square) in (-7, -9) and self.board.en_passant == self.to_square:
+                    capture = True
+                # Double push
+                double_push = self.holden_piece == piece.P and (self.from_square - self.to_square) in (16, -16)
+                # En passant
+                enpassant = self.holden_piece == piece.P and (self.from_square - self.to_square) in (-7, -9) and self.board.en_passant == self.to_square
+                # Castling
+                castling = (self.holden_piece == piece.K and (self.from_square - self.to_square) in (2, -2))
+                
+                # Encode the move
+                move = encode_move(self.from_square, self.to_square, self.holden_piece, promotion, capture, double_push, enpassant, castling)
+                status, bots_move, game_state = self.controller.make_move(move)
+                if bots_move:
+                    self.last_squares = [get_move_source(bots_move), get_move_target(bots_move)]
+                
+                if game_state != None:
+                    self.is_spectating = True
+                    self.show_win_screen = True
+                    
+            self.holden_square = None
+            self.holden_piece = None
+    
+    def mouse_up(self) -> None:
         """
         Handles the mouse button release event during a chess game.
         This method is responsible for processing the player's move when the mouse
@@ -343,87 +476,9 @@ class Graphics:
         """
         if self.is_spectating:
             # Check if the user clicked on the close button
-            x, y = self.cursor_position
-            rect_width = WINDOW_SIZE // 3.6 * 0.8
-            rect_height = 70
-            rect_x = (WINDOW_SIZE - rect_width) // 2
-            rect_y = (WINDOW_SIZE - WINDOW_SIZE // 5) // 2 + WINDOW_SIZE // 5 - rect_height - 20
-            if rect_x < x < rect_x + rect_width and rect_y < y < rect_y + rect_height:
-                self.show_win_screen = False
-            return
-        if self.promotion_mode and self.is_spectating == False:
-            # Get the promoted piece
-            if self.promotion_hover is not None:
-                promotion = self.promotion_hover
-            else:
-                # Cancel move
-                self.holden_square = None
-                self.holden_piece = None
-                self.promotion_mode = False
-                return
-            
-            # Capture
-            capture = self.board.occupancies[color.black] & (1 << self.to_square) != 0
-            # Double push
-            double_push = self.holden_piece == piece.P and (self.from_square - self.to_square) in (16, -16)
-            # En passant
-            enpassant = self.holden_piece == piece.P and (self.from_square - self.to_square) in (7, -7) and self.board.en_passant == self.to_square
-            # Castling
-            castling = (self.holden_piece == piece.K and (self.from_square - self.to_square) in (2, -2))
-            
-            # Encode the move
-            move = encode_move(self.from_square, self.to_square, piece.P, promotion, capture, double_push, enpassant, castling)
-            status, bots_move, game_state = self.controller.make_move(move)
-            if bots_move:
-                self.last_squares = [get_move_source(bots_move), get_move_target(bots_move)]
-            
-            if game_state != None:
-                self.is_spectating = True
-                self.show_win_screen = True
-                        
-            self.holden_square = None
-            self.holden_piece = None
-            self.promotion_mode = False
+            self.check_close_win_screen()
+        elif self.promotion_mode and self.is_spectating == False:
+            self.promote_select()
         elif self.is_spectating == False:
-            self.last_squares = [self.holden_square]
-            if self.holden_square is not None:
-                self.from_square = self.holden_square
-                self.to_square = self.hovered_square
-                
-                if self.from_square != self.to_square:
-                    # Get data about the move
-                    # Promotion
-                    if self.promotion_mode == False:
-                        if self.holden_piece == piece.P and (self.to_square // 8) == 7 and (self.from_square // 8) == 6:
-                            self.promotion_mode = True
-                            self.holden_square = None
-                            self.holden_piece = None
-                            return
-                    
-                    promotion = 0
-                        
-                    # Capture
-                    capture = self.board.occupancies[color.black] & (1 << self.to_square) != 0 # Normal Capture
-                    # Special case of en passant capture
-                    if self.holden_piece == piece.P and (self.from_square - self.to_square) in (-7, -9) and self.board.en_passant == self.to_square:
-                        capture = True
-                    # Double push
-                    double_push = self.holden_piece == piece.P and (self.from_square - self.to_square) in (16, -16)
-                    # En passant
-                    enpassant = self.holden_piece == piece.P and (self.from_square - self.to_square) in (-7, -9) and self.board.en_passant == self.to_square
-                    # Castling
-                    castling = (self.holden_piece == piece.K and (self.from_square - self.to_square) in (2, -2))
-                    
-                    # Encode the move
-                    move = encode_move(self.from_square, self.to_square, self.holden_piece, promotion, capture, double_push, enpassant, castling)
-                    status, bots_move, game_state = self.controller.make_move(move)
-                    if bots_move:
-                        self.last_squares = [get_move_source(bots_move), get_move_target(bots_move)]
-                    
-                    if game_state != None:
-                        self.is_spectating = True
-                        self.show_win_screen = True
-                        
-                self.holden_square = None
-                self.holden_piece = None
+            self.make_move()
         

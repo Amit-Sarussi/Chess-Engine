@@ -1,6 +1,6 @@
 from LMDB import LMDBWrapper
 from game import Game
-from gameSaver import GameSaver
+from game_saver import GameSaver
 from headers import *
 from tensorflow.keras.models import load_model # type: ignore
 
@@ -18,7 +18,7 @@ class Tournament:
         self.gameSaver = GameSaver(self.db)
         self.save_interval = 100_000
     
-    def start(self):      
+    def start(self) -> None:      
         """
         Starts the tournament and manages the execution of games.
 
@@ -41,18 +41,18 @@ class Tournament:
                     self.results["draw"] += 1
             self.game.reset()
             
-            # if (i + 1) % self.save_interval == 0:
-            #     print(f"Finished {format(i + 1, ',d')} games out of {format(self.num_games, ',d')}")
-            #     self.gameSaver.save_game_data(self.games_data)
-            #     self.games_data = []
-            #     percent_complete = (i + 1) / self.num_games * 100
-            #     print(f"Saved the last {self.save_interval} games, {percent_complete:.2f}% complete")
+            if (i + 1) % self.save_interval == 0:
+                print(f"Finished {format(i + 1, ',d')} games out of {format(self.num_games, ',d')}")
+                self.gameSaver.save_game_data(self.games_data)
+                self.games_data = []
+                percent_complete = (i + 1) / self.num_games * 100
+                print(f"Saved the last {self.save_interval} games, {percent_complete:.2f}% complete")
             if (i + 1) % 1 == 0:
                 print(f"Finished {format(i + 1, ',d')} games out of {format(self.num_games, ',d')}")
                 
         self.gameSaver.save_game_data(self.games_data)
             
-    def print_results(self):
+    def print_results(self) -> None:
         """
         Prints the results of the tournament, including the number of games played,
         the win rates for Player 1 and Player 2, and the draw rate.

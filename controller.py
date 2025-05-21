@@ -29,6 +29,6 @@ class Controller:
         self.game = Game(player_type.graphics, self.opponent_type, self.db, self.model)
         self.graphics = Graphics(self.game, self)
     
-    def make_move(self, move):
+    def make_move(self, move) -> tuple[bool, int | None, int | None]:
         """Executes a move in the current game."""
         return self.game.make_move(move)

@@ -43,13 +43,11 @@ class AIPlayer(Player):
 
         return tensor
 
-    def make_player_move(self):
+    def make_player_move(self) -> int | None:
         """
-        Executes the best possible move for the player based on pre-evaluated scores
-        from a database. Returns the chosen move or None if no
-        valid moves are available.
-
-        This version batches the evaluation of moves for efficiency.
+        Make a move using the AI model.
+        This method generates all possible moves, evaluates them using the AI model,
+        and selects the best move based on the evaluation scores.
         """
         all_moves = self.board.generate_moves()
         if not all_moves:
@@ -59,7 +57,7 @@ class AIPlayer(Player):
         moves_to_evaluate = []
         for move in all_moves:
             restore = self.board.copy_board()
-            result = self.board.make_move(move, move_type.all_moves)
+            result = self.board.make_move(move)
             if result:
                 fens.append(self.board.to_scoreboard_array())
                 moves_to_evaluate.append(move)
@@ -78,7 +76,7 @@ class AIPlayer(Player):
         moves_with_evaluations.sort(key=lambda x: x[1], reverse=True) # Sort by the evaluation
 
         for move, _ in moves_with_evaluations:
-            status = self.board.make_move(move, move_type.all_moves)
+            status = self.board.make_move(move)
             if status:
                 return move
         return None
