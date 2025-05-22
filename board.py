@@ -311,11 +311,15 @@ class Board:
             # Quiet move
             if not target_square < 0 and not get_bit(self.occupancies[color.both], target_square):
                 # Pawn promotion
+                q = piece.Q if color == color.white else piece.q
+                r = piece.R if color == color.white else piece.r
+                b = piece.B if color == color.white else piece.b
+                n = piece.N if color == color.white else piece.n
                 if (target_square // 8 == 7 and color == color.white) or (target_square // 8 == 0 and color == color.black):
-                    moves.append(encode_move(source_square, target_square, pc, piece.Q, 0, 0, 0, 0))
-                    moves.append(encode_move(source_square, target_square, pc, piece.R, 0, 0, 0, 0))
-                    moves.append(encode_move(source_square, target_square, pc, piece.B, 0, 0, 0, 0))
-                    moves.append(encode_move(source_square, target_square, pc, piece.N, 0, 0, 0, 0))
+                    moves.append(encode_move(source_square, target_square, pc, q, 0, 0, 0, 0))
+                    moves.append(encode_move(source_square, target_square, pc, r, 0, 0, 0, 0))
+                    moves.append(encode_move(source_square, target_square, pc, b, 0, 0, 0, 0))
+                    moves.append(encode_move(source_square, target_square, pc, n, 0, 0, 0, 0))
                 else:
                     # One square move
                     moves.append(encode_move(source_square, target_square, pc, 0, 0, 0, 0, 0))
