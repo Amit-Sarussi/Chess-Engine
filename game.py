@@ -170,10 +170,3 @@ class Game:
             self.board.restore_board(*board_copy)
         
         return True, move_result, None
-
-        
-        
-        
-        
-        
-

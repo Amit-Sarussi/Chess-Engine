@@ -206,3 +206,4 @@ def get_rook_attacks(square: int, occupancy: int) -> int:
 def get_queen_attacks(square: int, occupancy: int) -> int:
     """Get the queen attacks for a given square and occupancy."""
     return get_bishop_attacks(square, occupancy) | get_rook_attacks(square, occupancy)
+

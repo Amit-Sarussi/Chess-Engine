@@ -47,24 +47,6 @@ class slide_piece(IntEnum):
     bishop = 0
     rook = 1
 
-class castle(IntEnum):
-    """
-    bin   dec  
-    0001  1     white king can castle to the king side  
-    0010  2     white king can castle to the queen side  
-    0100  4     black king can castle to the king side  
-    1000  8     black king can castle to the queen side  
-
-    examples  
-    1111        both sides an castle both directions  
-    1001        black king  => queen side  
-                white king  => king side  
-    """
-    wk = 1
-    wq = 2
-    bk = 4
-    bq = 8
-    all = 15
 
 class player_type(IntEnum):
     random = 0
@@ -94,6 +76,24 @@ START_POSITION: Final = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 
 TRICKY_POSITION: Final = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 "
 KILLER_POSITION: Final = "rnbqkb1r/pp1p1pPp/8/2p1pP2/1P1P4/3P3P/P1P1P3/RNBQKBNR w KQkq e6 0 1"
 CMK_POSITION: Final = "r2q1rk1/ppp2ppp/2n1bn2/2b1p3/3pP3/3P1NPP/PPP1NPB1/R1BQ1RK1 b - - 0 9 "
+class castle(IntEnum):
+    """
+    bin   dec  
+    0001  1     white king can castle to the king side  
+    0010  2     white king can castle to the queen side  
+    0100  4     black king can castle to the king side  
+    1000  8     black king can castle to the queen side  
+
+    examples  
+    1111        both sides an castle both directions  
+    1001        black king  => queen side  
+                white king  => king side  
+    """
+    wk = 1
+    wq = 2
+    bk = 4
+    bq = 8
+    all = 15
 
 
 #                                castling   move    in      in
